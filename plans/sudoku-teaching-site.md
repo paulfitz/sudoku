@@ -839,6 +839,57 @@ digit with one dot is a hidden single; two digits with dots in the same two cell
 hidden pair, visible as two matching rows rather than something held in the head. It is
 also exactly what Snyder notation approximates on the grid itself.
 
+### Part P — Strong links, rebuilt as something you operate
+
+Reported: *"I can't understand strong links from the presentation."* Fair. What the page
+had was a catalogue — pick a digit, read a list of its strong links — under a callout
+restating the definition. Everything it claimed was true and nothing on the page could be
+disagreed with, which is a bad sign for a teaching page: there was no move for the reader
+to make and therefore nothing that could come out surprising.
+
+Two specific things a definition cannot deliver:
+
+1. **"At least one is true" is a switch, not a fact.** The useful form is *if this end is
+   off, the other is on* — and that is a thing you do to a link, not a property you
+   observe about one.
+2. **The elimination does not depend on which end is the digit.** The old page asserted
+   this (the mistakes list said "you cannot, and need not"), which is precisely the
+   assertion a reader has no reason to accept on the page's word.
+
+So the page is now three acts on one board, and the definition moved *below* them into
+"The rule", where it reads as a name for something already done rather than as a
+prerequisite:
+
+| act | what you do | what it is for |
+|---|---|---|
+| Push on one | tap an end to switch the digit off; the other lights up | the see-saw, felt |
+| Chain two | walk a skyscraper link by link, from either end, then claim each end in turn | both claims kill the same cells |
+| Find your own | tap two cells you think are a link | a strong link is a count, so practise counting |
+
+Act 1's payoff is the *illegal* move. Tapping the second end too is the obvious next thing
+to try, and the widget does not refuse it silently — it draws the house with nowhere left
+to put the digit. The definition arrives as the result of breaking it.
+
+Act 2 is the one the page exists for. Walking the chain ends at "at least one of these two
+ends is the 7", and then two buttons let you insist on either end. The same three cells
+die both times. That is not a sentence the reader has to take on trust; it is two clicks
+and an identical picture.
+
+Two things worth recording:
+
+- **Which example gets picked is pedagogy, not plumbing.** The first version opened on a
+  strong link in row 1 — a row with exactly two empty cells in it. Every claim it made was
+  true and it taught nothing: of course the digit has two homes, there are only two places
+  left. Links are now ranked by how much elbow room the house has, so "two homes" is a
+  fact about the digit rather than about the leftovers. There is a test on this, because
+  it is invisible to every other kind of test: the widget was working perfectly.
+- **The tests read the screen.** `tools/checks/pages.js` deliberately does *not* recompute
+  the link ranking to find out which link the widget chose — it reads the ends off the
+  tinted house. A test that duplicates a decision loses the ability to notice the decision
+  going wrong. Both of the load-bearing assertions (the contradiction on both-ends-off,
+  and the two ends killing identical cells) were verified by breaking the widget in a
+  plausible way and watching them fail.
+
 ### Not built
 
 Jellyfish and naked quads are detected and will appear in the playground's hints, but have

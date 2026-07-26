@@ -302,6 +302,12 @@ a.skip:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .link-list { font-size: 14px; padding-left: 20px; }
 .link-list li { margin-bottom: 4px; }
 
+/* strong links: three acts on one board, and the chain walked a link at a time */
+.act-tabs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 2px; }
+.act-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chain-steps { font-size: 14.5px; padding-left: 22px; margin: 0 0 10px; }
+.chain-steps li { margin-bottom: 7px; }
+
 /* ------------------------------------------------------------------ board */
 
 .board { position: relative; width: 100%; max-width: 480px; }

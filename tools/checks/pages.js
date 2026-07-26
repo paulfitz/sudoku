@@ -24,12 +24,135 @@ module.exports = async function (page) {
   if (!geo || geo.indexOf('peers') < 0) page.fail('geometry page: clicking a cell said nothing useful');
   else page.log('geometry: ' + geo.replace(/\s+/g, ' ').trim().slice(0, 80));
 
+  // --- strong links: three acts, each of which has to actually do something ------
+  //
+  // The claim this page makes is not a sentence, it is a behaviour: push one end of a
+  // link down and the other comes up; push both down and the house breaks. Assert the
+  // behaviour, because the sentence being present proves nothing.
   await page.hash('#/lesson/strong-links');
-  await page.clickText('.controls .btn.digit', '5');
-  var sl = await page.text('.narrative .step-text');
-  if (!sl || sl.indexOf('strong') < 0) page.fail('strong links page: digit picker did nothing');
-  else page.log('strong links: ' + sl.replace(/\s+/g, ' ').trim().slice(0, 80));
+
+  // Act 1: the see-saw. Which link the widget opens on is its own decision (it ranks them
+  // by how much elbow room the house has), so read the ends off the tinted house rather
+  // than recomputing the ranking here — a test that duplicates the choice stops being able
+  // to notice the choice going wrong.
+  var seesaw = await page.eval(
+    '(function(){' +
+    ' var ends=[].filter.call(document.querySelectorAll(".stage .cell.house-base"),' +
+    '   function(c){ return c.querySelector(".cand:not(.off)"); });' +
+    ' if (ends.length !== 2) return JSON.stringify({bad: ends.length});' +
+    ' var name=function(c){ return c.getAttribute("aria-label").split(",")[0].trim(); };' +
+    ' var out={a:name(ends[0]), b:name(ends[1]),' +
+    '   d:ends[0].querySelector(".cand:not(.off)").textContent.trim(),' +
+    '   ai:ends[0].dataset.cell, bi:ends[1].dataset.cell,' +
+    '   room:[].filter.call(document.querySelectorAll(".stage .cell.house-base"),' +
+    '     function(c){ return !c.querySelector(".value").textContent; }).length};' +
+    ' ends[0].click(); return JSON.stringify(out);})()');
+  var SL = JSON.parse(seesaw);
+  if (SL.bad !== undefined) {
+    page.fail('strong links act 1: the tinted house shows ' + SL.bad +
+      ' homes for the digit, not 2');
+  }
+  var lit = await page.text('.narrative .step-text');
+  if (String(lit).indexOf(SL.b + ' is the ' + SL.d) < 0) {
+    page.fail('strong links act 1: switching ' + SL.a + ' off did not light ' + SL.b +
+      ' — got "' + String(lit).replace(/\s+/g, ' ').trim() + '"');
+  } else page.log('strong links act 1: ' + SL.a + ' off -> ' + SL.b + ' is the ' + SL.d +
+    ' (house has ' + SL.room + ' empty cells)');
+
+  // A house with only two empty cells has a strong link on every digit it is missing, and
+  // that link demonstrates nothing. The page opening on one of those was the first version
+  // of this widget's real bug, so pin the ranking down.
+  if (SL.room < 4) {
+    page.fail('strong links act 1: opens on a link in a house with only ' + SL.room +
+      ' empty cells — "two homes" there is a fact about the leftovers, not the digit');
+  }
+
+  // ...and switching the other one off too must be refused, not quietly accepted
+  await page.eval('document.querySelector(\'.stage .board-grid .cell[data-cell="' +
+    SL.bi + '"]\').click()');
+  var both = await page.text('.narrative .verdict.bad');
+  if (!both || both.indexOf('nowhere') < 0) {
+    page.fail('strong links act 1: switching both ends off was not refused — "' + both + '"');
+  } else page.log('strong links act 1: both off -> "' + both.replace(/\s+/g, ' ').trim().slice(0, 70) + '"');
   await page.shot('strong-links');
+
+  // act 2: the chain, walked from one end, ending in an either-way elimination
+  await page.clickText('.act-tab', 'Chain two');
+  var chainEnds = await page.eval(
+    '(function(){var S=window.Sudoku,D=window.Drills,f=D.makeDrill("skyscraper",0).primary;' +
+    ' var ends=[f.links[0].a, f.links[2].b];' +
+    ' document.querySelector(\'.stage .board-grid .cell[data-cell="\'+ends[0]+\'"]\').click();' +
+    ' return JSON.stringify({names:ends.map(S.cellName), d:f.digits[0],' +
+    '  victims:f.eliminations.map(function(e){return S.cellName(e.cell);})});})()');
+  var CH = JSON.parse(chainEnds);
+  for (var s = 0; s < 3; s++) await page.clickText('.controls .btn', 'Follow the next link');
+  var conclusion = await page.text('.narrative .step-text');
+  if (String(conclusion).indexOf('at least one of ' + CH.names[0]) < 0) {
+    page.fail('strong links act 2: walking the chain did not conclude on both ends — "' +
+      String(conclusion).replace(/\s+/g, ' ').trim().slice(-120) + '"');
+  } else page.log('strong links act 2: chain concludes "at least one of ' +
+    CH.names.join(' / ') + '"');
+
+  // the payoff: claiming either end has to kill the same cells
+  var killed = [];
+  for (var e = 0; e < 2; e++) {
+    await page.clickText('.controls .btn', 'Say ' + CH.names[e] + ' is the ' + CH.d);
+    killed.push(await page.eval(
+      '[].map.call(document.querySelectorAll(".stage .board-grid .cand.mark-elim"),' +
+      'function(x){return x.dataset.cell+":"+x.dataset.digit;}).sort().join(",")'));
+  }
+  if (!killed[0] || killed[0] !== killed[1]) {
+    page.fail('strong links act 2: the two ends do not kill the same cells — "' +
+      killed[0] + '" vs "' + killed[1] + '"');
+  } else page.log('strong links act 2: both ends kill ' + CH.victims.join(' ') + ' — identical');
+  var closer = await page.text('.narrative .step-text');
+  if (!closer || closer.indexOf('Same cells') < 0) {
+    page.fail('strong links act 2: no "same cells either way" payoff after claiming both ends');
+  }
+
+  // act 3: counting practice — a real link is accepted, a three-home house is not
+  await page.clickText('.act-tab', 'Find your own');
+  var hunt = await page.eval(
+    '(function(){var S=window.Sudoku,T=window.Techniques,D=window.Drills;' +
+    ' var b=D.makeDrill("x-wing",0).board;' +
+    ' var d=null; for (var k=1;k<=9;k++) if (T.strongLinks(b,k).length) { d=k; break; }' +
+    ' var l=T.strongLinks(b,d)[0];' +
+    ' var g=document.querySelector(".stage .board-grid");' +
+    ' g.querySelector(\'.cell[data-cell="\'+l.a+\'"]\').click();' +
+    ' g.querySelector(\'.cell[data-cell="\'+l.b+\'"]\').click();' +
+    ' return d;})()');
+  var verdict = await page.text('.narrative .verdict');
+  if (!verdict || verdict.indexOf('Yes') < 0) {
+    page.fail('strong links act 3: a genuine link on the ' + hunt + ' was rejected — "' +
+      String(verdict).replace(/\s+/g, ' ').trim() + '"');
+  } else page.log('strong links act 3: genuine link accepted');
+
+  // A pair in a house with three or more homes must be told exactly why it fails — and
+  // the pair has to be crowded in *every* house it shares, or the widget is right to
+  // accept it and the assertion would be the thing that is wrong.
+  var miss = await page.eval(
+    '(function(){var S=window.Sudoku,T=window.Techniques,D=window.Drills;' +
+    ' var b=D.makeDrill("x-wing",0).board;' +
+    ' var d=null; for (var k=1;k<=9;k++) if (T.strongLinks(b,k).length) { d=k; break; }' +
+    ' for (var hh=0;hh<27;hh++){ var homes=b.cellsFor(hh,d);' +
+    '   if (homes.length<3) continue;' +
+    '   for (var i=0;i<homes.length;i++) for (var j=i+1;j<homes.length;j++){' +
+    '     var shared=S.housesOf[homes[i]].filter(function(x){' +
+    '       return S.housesOf[homes[j]].indexOf(x)>=0;});' +
+    '     var crowded=shared.every(function(x){return b.cellsFor(x,d).length>2;});' +
+    '     if (!crowded) continue;' +
+    '     var g=document.querySelector(".stage .board-grid");' +
+    '     g.querySelector(\'.cell[data-cell="\'+homes[i]+\'"]\').click();' +
+    '     g.querySelector(\'.cell[data-cell="\'+homes[j]+\'"]\').click();' +
+    '     return homes.length; } } return 0;})()');
+  if (miss) {
+    var why = await page.text('.narrative .verdict.bad');
+    if (!why || !/\bhomes\b/.test(why)) {
+      page.fail('strong links act 3: a too-crowded house was rejected without the count — "' +
+        String(why).replace(/\s+/g, ' ').trim() + '"');
+    } else page.log('strong links act 3: crowded house explained — "' +
+      why.replace(/\s+/g, ' ').trim().slice(0, 90) + '"');
+  } else page.log('strong links act 3: no crowded house in this grid, skipped');
 
   await page.hash('#/lesson/aic');
   var aic = await page.text('.chain.big');

@@ -451,3 +451,161 @@ test.describe('nothing dead-ends', () => {
     expect(errors, errors.join('\n')).toEqual([]);
   });
 });
+
+test.describe('strong links are operated, not read', () => {
+  /* The complaint this page was rebuilt for: "I can't understand strong links from the
+   * presentation." So the bar is not that the definition appears somewhere. It is that a
+   * person who does not already know it can push on the thing and be shown what happens.
+   * Everything below is driven off what is rendered — pencil marks, ARIA labels, button
+   * text — with no help from the engine. */
+
+  /** Which cells the grid currently reports as struck through, by name. */
+  async function struckCells(grid) {
+    const names = [];
+    for (const cell of await grid.locator('.cell').all()) {
+      const label = (await cell.getAttribute('aria-label')) || '';
+      if (/eliminated/.test(label)) names.push(label.split(',')[0].trim());
+    }
+    return names.sort();
+  }
+
+  test('act 1: switching one end off raises the other, and both off breaks the house',
+    async ({ page }) => {
+      await page.goto(SITE + '#/lesson/strong-links');
+      const stage = page.locator('.stage');
+      const info = stage.locator('.narrative .step-text');
+      const grid = stage.locator('.board-grid');
+
+      // The page has to say what to do, in words, before anything is clicked.
+      await expect(info).toContainText(/tap/i);
+
+      // The tinted house is the argument. A person counts the marks left in it.
+      const house = stage.locator('.cell.house-base');
+      expect(await house.count(), 'no house is highlighted to count inside').toBe(9);
+      const inHouse = [];
+      for (const c of await house.all()) {
+        const marks = await c.locator('.cand:not(.off)').allInnerTexts();
+        if (!marks.length) continue;
+        const label = (await c.getAttribute('aria-label')) || '';
+        inHouse.push({ cell: c, name: label.split(',')[0].trim(), digit: marks[0].trim() });
+      }
+      expect(inHouse.length,
+        'the highlighted house should show exactly the two homes under discussion').toBe(2);
+
+      const [first, second] = inHouse;
+      expect(first.digit).toBe(second.digit);
+
+      // Push one end down. The other must be named, and named as settled.
+      await first.cell.click();
+      const after = await info.innerText();
+      expect(after, `switching ${first.name} off said nothing about ${second.name}`)
+        .toContain(`${second.name} is the ${second.digit}`);
+
+      // Push the other down as well. This is the illegal move, and it has to be shown as
+      // illegal — quietly ignoring it teaches nothing.
+      await second.cell.click();
+      const broken = await info.innerText();
+      expect(broken, 'switching both ends off was accepted without complaint')
+        .toMatch(/nowhere|cannot happen|impossible/i);
+      expect(broken, 'the contradiction never states the rule it just demonstrated')
+        .toMatch(/cannot both be off|at least one/i);
+    });
+
+  test('act 2: the chain is walked by hand and pays off the same way from either end',
+    async ({ page }) => {
+      await page.goto(SITE + '#/lesson/strong-links');
+      const stage = page.locator('.stage');
+      const info = stage.locator('.narrative .step-text');
+      const grid = stage.locator('.board-grid');
+
+      await stage.locator('.act-tab', { hasText: 'Chain two' }).click();
+
+      // The prompt names the two far ends; a person reads them off and taps one.
+      const ends = await info.locator('.rc').allInnerTexts();
+      expect(ends.length, 'the prompt does not name the ends to tap').toBeGreaterThanOrEqual(2);
+      const [endA, endB] = [ends[0].trim(), ends[1].trim()];
+      await grid.locator(`[aria-label^="${endA},"]`).click();
+
+      // Turn the crank. Each press must add a link, and each link must justify itself by
+      // naming the house it counted in.
+      const next = stage.locator('.controls .btn', { hasText: 'Follow the next link' });
+      for (let i = 0; i < 5 && (await next.count()); i++) await next.first().click();
+      const steps = info.locator('.chain-steps li');
+      expect(await steps.count(), 'the chain never got walked').toBeGreaterThanOrEqual(3);
+      for (const step of await steps.all()) {
+        expect(await step.innerText()).toMatch(/row|column|box/i);
+      }
+      // and the alternation has to be visible, not just implied
+      const walked = await info.innerText();
+      expect(walked).toMatch(/strong link/i);
+      expect(walked).toMatch(/weak link/i);
+      expect(walked, 'the chain does not conclude on the pair of ends')
+        .toMatch(new RegExp(`at least one of ${endA} and ${endB}`));
+
+      // The payoff. Claim each end in turn; the same cells must die both times.
+      const kills = [];
+      for (const end of [endA, endB]) {
+        const claim = stage.locator('.controls .btn', { hasText: new RegExp(`Say ${end} is`) });
+        expect(await claim.count(), `no way to claim ${end}`).toBeGreaterThan(0);
+        await claim.first().click();
+        kills.push(await struckCells(grid));
+      }
+      expect(kills[0].length, 'claiming an end killed nothing').toBeGreaterThan(0);
+      expect(kills[0], 'the two ends kill different cells — the whole point collapses')
+        .toEqual(kills[1]);
+      expect(await info.innerText(),
+        'having shown both ends agree, the page never says so').toMatch(/same cells/i);
+    });
+
+  test('act 3: counting homes is checked, and a wrong count is told the count',
+    async ({ page }) => {
+      await page.goto(SITE + '#/lesson/strong-links');
+      const stage = page.locator('.stage');
+      const info = stage.locator('.narrative .step-text');
+      const grid = stage.locator('.board-grid');
+
+      await stage.locator('.act-tab', { hasText: 'Find your own' }).click();
+      await expect(info).toContainText(/tap the two cells/i);
+
+      // Read the grid row by row, exactly as a person hunting a strong link would.
+      const rows = [];
+      for (const row of await grid.locator('[role="row"]').all()) {
+        const lit = [];
+        for (const cell of await row.locator('.cell').all()) {
+          const marks = await cell.locator('.cand:not(.off)').allInnerTexts();
+          if (!marks.length) continue;
+          const label = (await cell.getAttribute('aria-label')) || '';
+          const col = parseInt(await cell.getAttribute('aria-colindex'), 10);
+          lit.push({ cell, col, name: label.split(',')[0].trim() });
+        }
+        rows.push(lit);
+      }
+
+      const twoHome = rows.find((r) => r.length === 2);
+      expect(twoHome, 'no row on this grid is down to two homes to practise on').toBeTruthy();
+      await twoHome[0].cell.click();
+      await twoHome[1].cell.click();
+      expect(await info.innerText(), 'a genuine two-home row was not accepted')
+        .toMatch(/\bYes\b/);
+
+      // Now the instructive failure. Two homes in a crowded row, chosen from different
+      // boxes so the row is the only house they share — then the count really is wrong.
+      const crowded = rows.find((r) => {
+        if (r.length < 3) return false;
+        return r.some((a, i) => r.slice(i + 1).some((b) =>
+          Math.floor((a.col - 1) / 3) !== Math.floor((b.col - 1) / 3)));
+      });
+      if (!crowded) return;   // nothing to test on this grid; not a failure
+      let pair = null;
+      crowded.forEach((a, i) => crowded.slice(i + 1).forEach((b) => {
+        if (!pair && Math.floor((a.col - 1) / 3) !== Math.floor((b.col - 1) / 3)) pair = [a, b];
+      }));
+      await pair[0].cell.click();
+      await pair[1].cell.click();
+      const why = await info.innerText();
+      expect(why, 'a bad guess was rejected without saying how many homes there were')
+        .toMatch(/\d+\s*homes/);
+      expect(why, 'the rejection never restates what the number has to be')
+        .toMatch(/two/i);
+    });
+});
