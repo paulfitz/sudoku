@@ -67,9 +67,8 @@
       links: f.links, solo: digit || null
     };
     Object.keys(extra || {}).forEach(function (k) { view[k] = extra[k]; });
-    return frame('So the useful question is: which cells can see <em>both</em> ' +
-      cl(ends) + '? Those are shaded here — anything in that zone is hit whichever end ' +
-      'turns out to be true.', view);
+    return frame('Which cells see <em>both</em> ' + cl(ends) + '? Those are shaded. Any ' +
+      'candidate in that zone goes, whichever end turns out to be true.', view);
   }
 
   // ---------------------------------------------------------------- SCRIPTS
@@ -130,14 +129,14 @@
           cellClass: (function () { var c = {}; c[f.cells[0]] = 'a'; c[f.cells[1]] = 'b'; return c; })(),
           marks: [{ cell: f.cells[0], digit: ds[0], kind: 'true' },
                   { cell: f.cells[1], digit: ds[1], kind: 'true' }] }),
-      frame('…or this way. We never find out which — and it does not matter, because ' +
-        'either way both digits are used up inside these two cells.',
+      frame('…or this way. Either way both digits are used up inside these two cells, ' +
+        'and you never need to know which.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells, dim: true,
           cellClass: (function () { var c = {}; c[f.cells[0]] = 'b'; c[f.cells[1]] = 'a'; return c; })(),
           marks: [{ cell: f.cells[0], digit: ds[1], kind: 'true' },
                   { cell: f.cells[1], digit: ds[0], kind: 'true' }] }),
       frame('Which leaves none of either digit for the rest of ' +
-        S.houseName(S.HOUSE_META[h]) + '. Out they go: ' + elimSummary(f) + '.',
+        S.houseName(S.HOUSE_META[h]) + ': ' + elimSummary(f) + '.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells,
           marks: patternMarks(f).concat(elimMarks(f)) })
     ];
@@ -150,14 +149,13 @@
         ds.map(dg).join(', ') + '.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells, dim: true,
           marks: patternMarks(f) }),
-      frame('Note that they do <em>not</em> each hold all ' + ds.length + ' digits, and ' +
-        'they don\'t need to. ' + f.cells.length + ' cells, ' + ds.length +
-        ' digits between them, is enough.',
+      frame('They do <em>not</em> each hold all ' + ds.length + ' digits, and do not need ' +
+        'to. ' + f.cells.length + ' cells with ' + ds.length + ' digits between them is enough.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells, marks: patternMarks(f), dim: true }),
       frame('Those ' + ds.length + ' cells will use up all ' + ds.length + ' digits ' +
         'between them, so there is none left for the rest of ' +
         S.houseName(S.HOUSE_META[h]) + '. Other cells there still <em>show</em> those ' +
-        'digits — that is not a problem, it is the point: ' + elimSummary(f) + '.',
+        'digits, and those are the candidates that go: ' + elimSummary(f) + '.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells,
           marks: patternMarks(f).concat(elimMarks(f)) })
     ];
@@ -179,9 +177,8 @@
         'each cell still looked busy: ' + elimSummary(f) + '.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells,
           marks: marks.concat(elimMarks(f)) }),
-      frame('Same theorem, other side: a hidden ' + word + ' in a house with <em>n</em> ' +
-        'empty cells is a naked (n&minus;' + ds.length + ') among the rest. Hidden subsets ' +
-        'are harder to <em>see</em>, not harder to justify.',
+      frame('The same fact from the other side: a hidden ' + word + ' in a house with ' +
+        '<em>n</em> empty cells is a naked (n&minus;' + ds.length + ') among the other cells.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells,
           marks: marks.concat(elimMarks(f)) })
     ];
@@ -196,8 +193,8 @@
       frame('One digit at a time. Here are the ' + dg(d) + 's in ' +
         S.houseName(S.HOUSE_META[box]) + '.',
         { houses: [{ house: box, kind: 'base' }], solo: d, focus: S.HOUSES[box], dim: true }),
-      frame('They all sit in the same ' + lineWord + ': ' + cl(f.cells) + '. That overlap ' +
-        'between the box and the ' + lineWord + ' is the whole trick.',
+      frame('They all sit in the same ' + lineWord + ': ' + cl(f.cells) + '. The box and the ' +
+        lineWord + ' overlap in exactly those cells.',
         { houses: [{ house: box, kind: 'base' }, { house: line, kind: 'cover' }],
           solo: d, focus: f.cells, dim: true, marks: patternMarks(f) }),
       frame('The box needs a ' + dg(d) + ' somewhere, and every candidate is in that ' +
@@ -244,8 +241,7 @@
             return cs.length === 2 ? { a: cs[0], b: cs[1], digit: d, kind: 'strong' } : null;
           }).filter(Boolean) }),
       frame('And every one of those homes falls inside the same ' + n + ' ' + coverWord +
-        '. That is the whole pattern — nothing about the <em>shape</em>, everything about ' +
-        'the count.',
+        '. That count is the pattern. How the cells are arranged does not matter.',
         { solo: d,
           houses: base.map(function (h) { return { house: h, kind: 'base' }; })
             .concat(cover.map(function (h) { return { house: h, kind: 'cover' }; })),
@@ -341,7 +337,7 @@
         marks: patternMarks(f) }),
       // One hop per frame. Four inferences in a single static picture was where readers
       // reported losing the thread.
-      frame('Chase it through. Suppose ' + cn(ends[0]) + ' is <em>not</em> the ' + dg(d) + '.',
+      frame('Now follow it. Suppose ' + cn(ends[0]) + ' is <em>not</em> the ' + dg(d) + '.',
         { solo: d, focus: [ends[0]], dim: true, links: f.links,
           marks: [{ cell: ends[0], digit: d, kind: 'elim' }] }),
       frame('Then its strong link forces ' + cn(hinge[0]) + ' to be the ' + dg(d) + '.',
@@ -353,12 +349,12 @@
           marks: [{ cell: hinge[0], digit: d, kind: 'true' },
                   { cell: hinge[1], digit: d, kind: 'elim' }] }),
       frame('And that forces ' + cn(ends[1]) + '. So <b>at least one of ' + cl(ends) +
-        ' is a ' + dg(d) + '</b> — we just never learn which.',
+        ' is a ' + dg(d) + '</b>. Which one is not determined.',
         { solo: d, focus: f.cells, dim: true, links: f.links, cellClass: cls,
           marks: [{ cell: hinge[1], digit: d, kind: 'elim' },
                   { cell: ends[1], digit: d, kind: 'true' }] }),
       zoneFrame(f, ends, d),
-      frame('Every ' + dg(d) + ' in that zone is doomed either way — ' + elimSummary(f) + '.',
+      frame('Every ' + dg(d) + ' in that zone goes, whichever end is true: ' + elimSummary(f) + '.',
         { solo: d, focus: f.cells.concat(elimCells(f)), links: f.links, cellClass: cls,
           marks: patternMarks(f).concat(elimMarks(f)) })
     ];
@@ -399,8 +395,7 @@
         'at most one of each pair is a ' + dg(d) + '. Strong, weak, strong, weak — that ' +
         'alternation is the whole chain.',
         { solo: d, links: f.links, focus: f.cells, dim: true, marks: patternMarks(f) }),
-      frame('Start at one end and assume the worst: suppose ' + cn(ends[0]) +
-        ' is <em>not</em> a ' + dg(d) + '.',
+      frame('Start at one end. Suppose ' + cn(ends[0]) + ' is <em>not</em> a ' + dg(d) + '.',
         { solo: d, links: f.links, focus: f.cells, dim: true, cellClass: cls,
           marks: [{ cell: ends[0], digit: d, kind: 'elim' }] }),
       frame('The alternation carries down the chain and forces the far end: ' + cn(ends[1]) +
@@ -409,7 +404,7 @@
           marks: [{ cell: ends[0], digit: d, kind: 'elim' },
                   { cell: ends[1], digit: d, kind: 'true' }] }),
       zoneFrame(f, ends, d),
-      frame('And so: ' + elimSummary(f) + '.',
+      frame('So every cell seeing both ends loses the ' + dg(d) + ': ' + elimSummary(f) + '.',
         { solo: d, links: f.links, focus: f.cells.concat(elimCells(f)), cellClass: cls,
           marks: patternMarks(f).concat(elimMarks(f)) })
     ];
@@ -425,8 +420,8 @@
         'the other is the ' + dg(d) + '".',
         { solo: d, links: f.links, focus: f.cells, dim: true, marks: patternMarks(f) }),
       frame('Now paint. Pick a cell, color it; color its strong-link partner the other ' +
-        'color; repeat. The network ends up strictly alternating — and one color is ' +
-        'the truth, the other is all false.',
+        'color; repeat. The network ends up strictly alternating, so one color is ' +
+        'entirely true and the other entirely false.',
         { solo: d, links: f.links, focus: f.cells, dim: true, cellClass: cls,
           marks: patternMarks(f) })
     ];
@@ -437,8 +432,7 @@
         { solo: d, links: f.links, focus: clash, dim: true, cellClass: cls,
           marks: patternMarks(f) }));
       base.push(frame('One color false means <em>every</em> cell of that color is false: ' +
-        elimSummary(f) + '. This is why coloring is worth the effort — one clash clears ' +
-        'several cells at once.',
+        elimSummary(f) + '. One clash clears several cells at once.',
         { solo: d, links: f.links, focus: f.cells, cellClass: cls,
           marks: patternMarks(f).concat(elimMarks(f)) }));
     } else {
@@ -446,8 +440,8 @@
         plural(elimCells(f).length, 'It sees', 'Each sees') + ' a cell of <em>both</em> colors.',
         { solo: d, links: f.links, focus: elimCells(f), dim: true, cellClass: cls,
           marks: patternMarks(f) }));
-      base.push(frame('One of the two colors is true, whichever it turns out to be. So a ' +
-        'cell seeing both is dead either way: ' + elimSummary(f) + '.',
+      base.push(frame('One of the two colors is true. So a cell seeing both loses the digit ' +
+        'whichever it is: ' + elimSummary(f) + '.',
         { solo: d, links: f.links, focus: f.cells.concat(elimCells(f)), cellClass: cls,
           marks: patternMarks(f).concat(elimMarks(f)) }));
     }
@@ -466,7 +460,7 @@
         '<b>pivot</b> — it sees both of the others.',
         { focus: [p].concat(w), dim: true, cellClass: pc,
           links: [{ a: p, b: w[0], digit: 0, kind: 'weak' }, { a: p, b: w[1], digit: 0, kind: 'weak' }] }),
-      frame('The pivot is ' + dg(x) + ' or ' + dg(y) + ' — nothing else. So just try both.',
+      frame('The pivot is ' + dg(x) + ' or ' + dg(y) + ' and nothing else. Try both.',
         { focus: [p].concat(w), dim: true, cellClass: pc,
           marks: [{ cell: p, digit: x, kind: 'pattern' }, { cell: p, digit: y, kind: 'pattern' }] }),
       frame('<b>Branch 1:</b> pivot is ' + dg(x) + '. Then ' + cn(w[0]) + ' can’t be ' +
@@ -479,8 +473,8 @@
         { focus: [p, w[1]], dim: true, cellClass: cb,
           marks: [{ cell: p, digit: y, kind: 'true' }, { cell: w[1], digit: y, kind: 'elim' },
                   { cell: w[1], digit: z, kind: 'true' }] }),
-      frame('Both branches end in the same place: <b>one of the two wings is a ' + dg(z) +
-        '</b>. The pivot has served its purpose and can be forgotten.',
+      frame('Both branches end the same way: <b>one of the two wings is a ' + dg(z) +
+        '</b>. The pivot is not needed from here on.',
         { focus: w, dim: true,
           marks: [{ cell: w[0], digit: z, kind: 'pattern' }, { cell: w[1], digit: z, kind: 'pattern' }] }),
       zoneFrame(f, w, z),
@@ -583,8 +577,7 @@
         dg(z) + ' no matter what.',
         { focus: ends, dim: true, links: f.links, cellClass: cls,
           marks: [{ cell: ends[0], digit: z, kind: 'pattern' }, { cell: ends[1], digit: z, kind: 'pattern' }] }),
-      frame('Same conclusion as always, so the same elimination: cells seeing both ends ' +
-        'lose the ' + dg(z) + ' — ' + elimSummary(f) + '.',
+      frame('So cells seeing both ends lose the ' + dg(z) + ': ' + elimSummary(f) + '.',
         { focus: f.cells.concat(elimCells(f)), links: f.links, cellClass: cls,
           marks: [{ cell: ends[0], digit: z, kind: 'pattern' }, { cell: ends[1], digit: z, kind: 'pattern' }]
             .concat(elimMarks(f)) })
@@ -596,13 +589,13 @@
     var floor = f.cells.filter(function (c) { return c !== extra; });
     var cls = {}; floor.forEach(function (c) { cls[c] = 'a'; }); cls[extra] = 'b';
     return [
-      frame('Four cells forming a rectangle: two rows, two columns, and — this part ' +
-        'matters — only two boxes. ' + cl(f.cells) + '.',
+      frame('Four cells forming a rectangle in two rows, two columns and only two boxes: ' +
+        cl(f.cells) + '. The two-box condition is what the argument needs.',
         { focus: f.cells, dim: true, cellClass: cls }),
       frame('All four contain ' + dg(ds[0]) + ' and ' + dg(ds[1]) + '. Three of them ' +
         'contain <em>nothing else</em>.',
         { focus: f.cells, dim: true, cellClass: cls, marks: patternMarks({ cells: f.cells, digits: ds }) }),
-      frame('Now the strange step. Imagine ' + cn(extra) + ' also came down to just ' +
+      frame('Now suppose ' + cn(extra) + ' also came down to just ' +
         dg(ds[0]) + dg(ds[1]) + '. Then you could fill the rectangle two ways — swap the ' +
         'digits diagonally — and both would be legal. Two solutions.',
         { focus: f.cells, dim: true, cellClass: cls,
@@ -612,9 +605,9 @@
         elimSummary(f) + '.',
         { focus: f.cells, cellClass: cls,
           marks: patternMarks({ cells: floor, digits: ds }).concat(elimMarks(f)) }),
-      frame('Note what this argument rests on: a fact about the <em>puzzle</em> — that it ' +
-        'was published with one solution — not about the rules of sudoku. Some solvers ' +
-        'refuse it on principle. It is always valid on real puzzles.',
+      frame('This argument uses a fact about the <em>puzzle</em> — that it has one ' +
+        'solution — rather than a rule of sudoku. Some solvers decline to use it for that ' +
+        'reason. Where uniqueness is guaranteed it is valid.',
         { focus: f.cells, cellClass: cls,
           marks: patternMarks({ cells: floor, digits: ds }).concat(elimMarks(f)) })
     ];
@@ -638,9 +631,8 @@
         dg(ds[0]) + dg(ds[1]) + ' — the deadly pattern, two solutions. Impossible.',
         { focus: f.cells, dim: true, cellClass: cls,
           marks: patternMarks({ cells: extras, digits: [z] }) }),
-      frame('So one of ' + cl(extras) + ' <em>is</em> the ' + dg(z) + '. Which is the ' +
-        'familiar "one of these two" conclusion: cells seeing both lose the ' + dg(z) +
-        ' — ' + elimSummary(f) + '.',
+      frame('So one of ' + cl(extras) + ' <em>is</em> the ' + dg(z) + ', and cells seeing ' +
+        'both lose it: ' + elimSummary(f) + '.',
         { focus: f.cells.concat(elimCells(f)), cellClass: cls,
           marks: patternMarks({ cells: extras, digits: [z] }).concat(elimMarks(f)) })
     ];
@@ -649,8 +641,8 @@
   SCRIPTS['bug-plus-one'] = function (f) {
     var cell = f.extra.cell, d = f.extra.digit;
     return [
-      frame('Something odd about this position: <em>every</em> unsolved cell has exactly ' +
-        'two candidates — except one. ' + cn(cell) + ' has three.',
+      frame('In this position <em>every</em> unsolved cell has exactly two candidates ' +
+        'except one: ' + cn(cell) + ' has three.',
         { focus: [cell], dim: true }),
       frame('If that cell also had two, every digit would appear exactly twice in every ' +
         'row, column and box. Grids like that always have an even number of solutions — ' +
@@ -701,26 +693,27 @@
   var LESSONS = [
     {
       id: 'geometry', group: 'foundations', skippable: true, title: 'Houses, peers, candidates',
-      tagline: 'The vocabulary everything else is built from.',
+      tagline: 'Row, column, box, and the 20 cells any cell can see.',
       custom: 'geometry',
       intro: '<p>A <b>house</b> is any row, column or box. A cell’s <b>peers</b> are the 20 ' +
         'cells sharing a house with it — the ones it <em>sees</em>. A <b>candidate</b> is a ' +
         'digit a cell could still take.</p>' +
         '<p class="muted">On every grid here, <b class="legend-given">heavy digits on a ' +
-        'shaded square</b> are the puzzle’s original clues; <span class="legend-solved">' +
-        'lighter ones</span> have been worked out already, to bring the puzzle to the ' +
-        'position being discussed. Colour is never used to tell those apart — it is ' +
-        'reserved for the pattern under discussion.</p>' +
+        'shaded square</b> are the puzzle’s clues and <span class="legend-solved">lighter ' +
+        'ones</span> were worked out to reach the position under discussion. Color never ' +
+        'marks that difference; it is reserved for the pattern being discussed.</p>' +
         '<p>Click any cell.</p>'
     },
     {
       id: 'naked-single', group: 'foundations', skippable: true, title: 'Naked singles', se: 'SE 1.2',
       technique: 'naked-single',
-      tagline: 'The whole game in one move — and where pencil marks come from.',
+      tagline: 'A cell with one candidate left.',
       intro: '<p>The small digits in every empty cell are its <b>candidates</b> — pencil ' +
-        'marks. A <b>naked single</b> is a cell down to just one. Nothing else fits.</p>' +
-        '<p class="muted">They are kept updated for you here, since you cannot discuss an ' +
-        'X-Wing without seeing them — but that does cost you scanning practice.</p>',
+        'marks. A <b>naked single</b> is a cell down to one of them. Nothing else fits, so ' +
+        'that is its digit.</p>' +
+        '<p class="muted">This site keeps the marks updated for you, because the later ' +
+        'techniques cannot be discussed without them. On paper you would maintain them ' +
+        'yourself, which is where most scanning practice comes from.</p>',
       rule: '<p>One candidate left in a cell &rarr; that is its digit.</p>',
       mistakes: [
         'Not re-checking the peers afterwards. Each placement frees up 20 other cells.',
@@ -731,24 +724,22 @@
     {
       id: 'hidden-single', group: 'foundations', skippable: true, title: 'Hidden singles', se: 'SE 1.5',
       technique: 'hidden-single',
-      tagline: 'The mental flip that everything later depends on.',
-      intro: '<p>Stop asking <em>"what goes in this cell?"</em> and ask <em>"where in this ' +
-        'house does this digit go?"</em></p>' +
-        '<p>That flip is the most important habit in sudoku — every technique from here on ' +
-        'is phrased in the second language, not the first.</p>',
+      tagline: 'A digit with one place left in a house.',
+      intro: '<p>There are two ways to look for a digit. <em>What goes in this cell?</em> finds naked ' +
+        'singles. <em>Where in this house does this digit go?</em> finds hidden ones.</p>' +
+        '<p>Every technique after this page is phrased the second way.</p>',
       huntWidget: 'scan',
-      hunt: '<p>Two things fall out of doing that a few times.</p>' +
-        '<p><b>Boxes run out of room first</b>, because a box is squeezed by three rows ' +
-        'and three columns at once. 56% of hidden singles show up in a box, and one in ten ' +
-        'is box-only — invisible if you scan rows and columns alone.</p>' +
-        '<p><b>A digit sitting in two boxes of a band is the loudest signal on the grid.</b> ' +
-        'Four out of five box hidden singles already have that digit in both of the other ' +
-        'boxes of their band or stack — the two strike-out lines are already drawn for you.</p>' +
-        '<p><b>After a placement, stop scanning.</b> Re-check only the digit you just ' +
-        'placed, plus the three houses the new cell touches. That is not a shortcut you get ' +
-        'away with — it is exhaustive. Placing a digit can only remove that digit from cells ' +
-        'that see it, so a newly forced single must either be the same digit or sit in a ' +
-        'house that just lost a cell.</p>',
+      hunt: '<p><b>Check boxes first.</b> A box is squeezed by three rows and three columns ' +
+        'at once, so it runs out of room soonest. 56% of hidden singles are in a box, and ' +
+        'one in ten is box-only — invisible if you scan rows and columns alone.</p>' +
+        '<p><b>Prefer digits that already appear in two boxes of a band.</b> Four out of ' +
+        'five box hidden singles have their digit in both of the other boxes of the band or ' +
+        'stack, so both strike-out lines are already on the grid.</p>' +
+        '<p><b>After a placement, do not rescan the grid.</b> Re-check only the digit you ' +
+        'just placed and the three houses its cell touches. That is exhaustive rather than ' +
+        'a shortcut: placing a digit can only remove that digit from cells that see it, so ' +
+        'any newly forced single is either the same digit or sits in a house that just lost ' +
+        'a cell.</p>',
       rule: '<p>A digit with only one possible cell in a house goes there — whatever else ' +
         'that cell was showing.</p>',
       mistakes: [
@@ -760,61 +751,62 @@
     {
       id: 'naked-pairs', group: 'subsets', title: 'Naked pairs & triples', se: 'SE 2.6',
       technique: 'naked-pair',
-      tagline: 'Two cells, two digits, one deduction.',
-      intro: '<p><em>n</em> cells holding only <em>n</em> candidates between them use those ' +
-        'digits up. The counting is the point — you never need to know which cell takes ' +
-        'which.</p>',
+      tagline: 'Two cells holding the same two candidates.',
+      intro: '<p><em>n</em> cells in a house holding only <em>n</em> candidates between them ' +
+        'use all <em>n</em> digits up. The rest of the house loses those digits.</p>' +
+        '<p>You never need to know which cell takes which.</p>',
       rule: '<p><em>n</em> cells in one house holding <em>n</em> candidates between them &rarr; ' +
         'remove those candidates from every other cell of that house.</p>',
       mistakes: [
         'Expecting each cell to show all the digits. {1,2} {2,3} {1,3} is a fine triple.',
         'Spotting the pattern and forgetting to do the eliminations.',
         'Worrying that another cell in the house still shows one of the pair\'s digits. ' +
-        'That is not a problem, it is the payoff — the two cells use both digits up, so ' +
-        'that candidate is exactly what gets struck.'
+        'That candidate is what the pair removes — if there were none, the pair would be ' +
+        'worth nothing.'
       ],
       drill: { find: 'two cells in one house with the same two candidates — one that still clears something' }
     },
     {
       id: 'naked-triples', group: 'subsets', title: 'Naked triples in the wild', se: 'SE 3.6',
       technique: 'naked-triple', hideFromGroups: false,
-      tagline: 'The same counting, one size up — and much harder to see.',
-      intro: '<p>Same rule as pairs; only the spotting is harder, because the three cells ' +
-        'rarely look alike.</p>' +
-        '<p>The trick: take the cells with 2 or 3 candidates and union their sets.</p>',
+      tagline: 'Three cells with three candidates between them.',
+      intro: '<p>Same rule as pairs, harder to spot, because the three cells rarely look ' +
+        'alike.</p>' +
+        '<p>To find them: take the cells holding two or three candidates and union their ' +
+        'sets.</p>',
       rule: '<p>Three cells whose candidates union to exactly three digits lock those ' +
         'digits in.</p>',
       mistakes: [
         'Pattern-matching the shapes. Union the sets instead.',
         'Including a cell with four candidates — every cell must fit inside the three.',
         'Expecting the rest of the house to be clear of those digits. It usually is not, ' +
-        'and that is the whole point — those are the candidates the triple strikes. A ' +
-        'triple with nothing left to remove is not a move. Needing the house to be clear ' +
-        'is the <em>hidden</em> subset\'s condition, not this one.'
+        'and those candidates are exactly what the triple removes. A triple with nothing ' +
+        'left to remove is not a move. Needing the house to be clear is the <em>hidden</em> ' +
+        'subset\'s condition, not this one.'
       ],
       drill: { find: 'three cells in one house whose candidates add up to only three digits, with those digits still to clear' }
     },
     {
       id: 'hidden-pairs', group: 'subsets', title: 'Hidden pairs & triples', se: 'SE 3.4',
       technique: 'hidden-pair',
-      tagline: 'The same theorem, seen from the other side.',
-      intro: '<p>A naked subset wearing a coat. <em>n</em> digits that fit in only <em>n</em> ' +
-        'cells own those cells — everything else in them dies.</p>' +
-        '<p>Harder to see, because the evidence is spread across the house rather than ' +
-        'sitting in one cell.</p>',
+      tagline: 'Two digits that fit in only two cells.',
+      intro: '<p><em>n</em> digits that fit in only <em>n</em> cells of a house will fill ' +
+        'those cells between them. Every other candidate in those cells goes.</p>' +
+        '<p>Harder to spot than a naked subset, because the evidence is spread across the ' +
+        'house instead of sitting in one cell.</p>',
       huntWidget: 'table',
-      hunt: '<p><b>Exhaust naked subsets first.</b> A hidden pair in a house with ' +
-        '<em>k</em> empty cells <em>is</em> a naked (k&minus;2) among the other cells — the ' +
-        'same fact from the other side. In a small house the naked reading is far easier to ' +
-        'see, so hidden-pair vision only earns its keep in busy houses.</p>' +
+      hunt: '<p><b>Exhaust naked subsets first.</b> A hidden pair in a house with <em>k</em> ' +
+        'empty cells <em>is</em> a naked (k&minus;2) among the other cells. In a small house ' +
+        'the naked reading is far easier to see, so hidden-pair vision only earns its keep ' +
+        'in busy houses.</p>' +
         '<p><b>Boxes first</b> — half of them turn up in a box.</p>' +
-        '<p><b>Do not bother ranking digits.</b> For hidden <em>singles</em>, digits with ' +
-        'three to five already placed give two thirds of all finds. For hidden pairs the ' +
-        'distribution is flat, so that habit buys you nothing here.</p>' +
+        '<p><b>Do not rank digits.</b> For hidden <em>singles</em>, digits with three to ' +
+        'five already placed give two thirds of all finds. For hidden pairs the ' +
+        'distribution is flat, so that habit buys nothing here.</p>' +
         '<p><b>Snyder notation</b> makes this nearly free: mark a digit in a box only when ' +
-        'it has exactly two homes there. A hidden pair is then two marks sitting in the ' +
-        'same two cells — the table above, drawn on the grid itself. Those pencilled pairs ' +
-        'are also strong links, which is what the chain lessons are built on.</p>',
+        'it has exactly two homes there. A hidden pair is then two marks in the same two ' +
+        'cells — the table above, drawn on the grid itself. Those pencilled pairs are also ' +
+        'strong links, which the chain lessons are built on.</p>',
       rule: '<p><em>n</em> digits confined to <em>n</em> cells &rarr; strip every other ' +
         'candidate from those cells.</p>',
       mistakes: [
@@ -827,9 +819,9 @@
       id: 'pointing', group: 'intersections', title: 'Pointing pairs', se: 'SE 2.6',
       technique: 'pointing',
       tagline: 'Box tells line.',
-      intro: '<p>A row and a box overlap in three cells, and that overlap is a lever. If a ' +
-        'digit’s only homes in a box all sit in one row, it lives in the overlap — so it is ' +
-        'nowhere else along that row.</p>',
+      intro: '<p>A row and a box overlap in three cells. If a digit’s only homes in the box ' +
+        'all sit in that row, the digit is somewhere in the overlap — so it is nowhere else ' +
+        'along the row.</p>',
       rule: '<p>Digit confined within a box to a single row or column &rarr; remove it from ' +
         'the rest of that row or column.</p>',
       mistakes: [
@@ -841,58 +833,55 @@
     {
       id: 'claiming', group: 'intersections', title: 'Claiming', se: 'SE 2.8',
       technique: 'claiming',
-      tagline: 'Line tells box. Same lever, other direction.',
-      intro: '<p>Pointing in reverse, and the same single idea: <b>a digit trapped in the ' +
+      tagline: 'Line tells box.',
+      intro: '<p>Pointing in reverse. One rule covers both: <b>a digit confined to the ' +
         'overlap of two houses is excluded from the rest of both.</b> Here the row’s homes ' +
-        'all fall in one box, so the box is cleared.</p>',
+        'all fall inside one box, so the rest of that box is cleared.</p>',
       rule: '<p>Digit confined within a row or column to a single box &rarr; remove it from ' +
         'the rest of that box.</p>',
       mistakes: [
-        'Memorising pointing and claiming as two unrelated tricks.',
+        'Memorizing pointing and claiming as two unrelated tricks.',
         'Not re-checking both directions after a placement.'
       ],
       drill: { find: 'the cells in one row or column where a digit is trapped in a single box' }
     },
     {
-      id: 'strong-links', group: 'links', title: 'Strong links: the atom',
+      id: 'strong-links', group: 'links', title: 'Strong links',
       custom: 'strong-links',
-      tagline: 'Learn this one object and a dozen named techniques collapse into one idea.',
-      // The definition used to sit here, above the widget. It is now below it: three acts
-      // of clicking teach the thing, and the words are only worth reading once you have
-      // already felt what they describe.
-      intro: '<p>Everything from here on is built from one object. Rather than describe it, ' +
-        'here it is to push on.</p>',
-      rule: '<p><b>Strong link:</b> a digit with exactly two homes in a house — ' +
-        '<em>at least one of them is true</em>, so knocking one out proves the other. ' +
-        '<b>Weak link:</b> two cells sharing a house — <em>at most one is true</em>, so ' +
-        'proving one kills the other.</p>' +
-        '<p>A chain alternates them: <em>off</em> travels down a strong link and comes out ' +
+      tagline: 'A digit with exactly two homes in a house.',
+      intro: '<p>Skyscrapers, kites, coloring and X-chains are all built from strong links. ' +
+        'Work through the three panels below, then read the rule.</p>',
+      rule: '<p><b>Strong link:</b> a digit with exactly two homes in a house. At least one ' +
+        'of them is true, so knocking one out proves the other. <b>Weak link:</b> two cells ' +
+        'sharing a house. At most one is true, so proving one kills the other.</p>' +
+        '<p>A chain alternates them. <em>Off</em> travels down a strong link and comes out ' +
         '<em>on</em>; <em>on</em> travels down a weak link and comes out <em>off</em>. Start ' +
-        'and end on a strong link, and the two ends give you an elimination — without ever ' +
-        'settling which end was the digit.</p>' +
-        '<p class="muted">Two strong links that touch are a skyscraper or a kite. A whole ' +
-        'network of them is simple coloring. Long alternating runs are X-chains. Every one ' +
-        'of those is this page, repeated.</p>',
+        'and end on a strong link, and the two ends give you an elimination without ' +
+        'settling which end holds the digit.</p>' +
+        '<p class="muted">Two strong links that touch are a skyscraper or a kite. A network ' +
+        'of them is simple coloring. Long alternating runs are X-chains.</p>',
       mistakes: [
-        'Reading a strong link off the <em>cells</em>. It is a property of a digit ' +
-          'inside a house: count that digit\'s homes there, and see if the count is two.',
-        'Trying to work out which end is the digit. Act 2 is the answer to that — you ' +
-          'cannot, and the elimination does not depend on it.',
+        'Reading a strong link off the <em>cells</em>. It is a property of a digit inside a ' +
+          'house: count that digit’s homes there and see whether the count is two.',
+        'Trying to work out which end holds the digit. You cannot, and the elimination ' +
+          'does not use it — the second panel above shows both ends producing the same ' +
+          'eliminations.',
         'Forgetting that a pair with exactly two homes is <em>also</em> a weak link. Both ' +
-          'ends can never be on either, which is why chains can enter and leave one.'
+          'ends can never be on either, which is how chains enter and leave one.'
       ]
     },
     {
       id: 'x-wing', group: 'fish', title: 'X-Wing', se: 'SE 3.2',
       technique: 'x-wing',
-      tagline: 'Not a shape. A counting argument that happens to look like a rectangle.',
-      intro: '<p><em>Two rows each need this digit; between them they reach only two ' +
-        'columns; so those columns are spoken for.</em> That sentence generalizes. The ' +
-        'picture of four corners does not.</p>' +
-        '<p class="muted">Solvers call this family <b>fish</b>: <em>n</em> lines needing ' +
-        'one digit, covered by <em>n</em> crossing lines. X-Wing is n=2, Swordfish n=3, ' +
-        'Jellyfish n=4. The names are whimsical; the counting is not. Every fish works on ' +
-        'a single digit, which is why the other eight vanish from the grid here.</p>',
+      tagline: 'One digit, two rows, two columns.',
+      intro: '<p>Two rows each need this digit. Between them they reach only two columns. So ' +
+        'those two columns are used up, and the digit goes from the rest of both.</p>' +
+        '<p>Count rather than pattern-match. The four candidates need not look like a ' +
+        'rectangle, and the same argument works at larger sizes.</p>' +
+        '<p class="muted">Solvers call this family <b>fish</b>: <em>n</em> lines needing one ' +
+        'digit, covered by <em>n</em> crossing lines. X-Wing is n=2, Swordfish n=3, ' +
+        'Jellyfish n=4. Every fish works on a single digit, which is why the other eight are ' +
+        'hidden on the grids here.</p>',
       huntWidget: 'fish',
       rule: '<p>Two homes in each of two rows, in the same two columns &rarr; clear both ' +
         'columns. And the same with rows and columns swapped.</p>',
@@ -905,11 +894,11 @@
     {
       id: 'swordfish', group: 'fish', title: 'Swordfish & Jellyfish', se: 'SE 3.8',
       technique: 'swordfish',
-      tagline: 'Three rows, three columns — and usually not a tidy shape at all.',
+      tagline: 'One digit, three rows, three columns.',
       intro: '<p>Same counting, one size up: three rows whose homes for a digit all fall in ' +
         'the same three columns.</p>' +
-        '<p>Do not expect a neat 3&times;3. Real swordfish are ragged — rows with only two of ' +
-        'the columns still count.</p>',
+        '<p>Do not expect a full 3&times;3 of candidates. Rows using only two of the three ' +
+        'columns still count.</p>',
       rule: '<p><em>n</em> rows whose candidates for a digit all fall within <em>n</em> ' +
         'columns &rarr; clear the digit from the rest of those columns. n=2 X-Wing, ' +
         'n=3 Swordfish, n=4 Jellyfish.</p>',
@@ -922,11 +911,11 @@
     {
       id: 'finned-fish', group: 'fish', title: 'Finned & sashimi fish', se: 'SE 4.0',
       technique: 'finned-x-wing',
-      tagline: 'What to do with the X-Wing that is almost there.',
-      intro: '<p>You will find far more <em>almost</em>-X-Wings than real ones — spoiled by ' +
-        'one extra candidate, the <b>fin</b>.</p>' +
-        '<p>Split into cases: either the fin is the digit, or the fish is genuine. Keep only ' +
-        'what both cases agree on.</p>',
+      tagline: 'An X-Wing spoiled by one extra candidate.',
+      intro: '<p>Almost-X-Wings are far more common than real ones. The extra candidate that ' +
+        'spoils the count is the <b>fin</b>.</p>' +
+        '<p>Split into two cases: either the fin holds the digit, or the fish is genuine. ' +
+        'Keep only the eliminations both cases agree on.</p>',
       rule: '<p>Fish + extra candidates confined to one box &rarr; keep only the eliminations ' +
         'that also see every fin.</p>',
       mistakes: [
@@ -938,15 +927,14 @@
     {
       id: 'skyscraper', group: 'chains', title: 'Skyscraper', se: 'SE 4.0',
       technique: 'skyscraper',
-      tagline: 'Two strong links, joined at the base. Your first real chain.',
-      intro: '<p>The smallest thing that is genuinely a chain.</p>' +
-        '<p>Two parallel lines each have two homes for a digit, and two of those homes line ' +
-        'up — so they cannot both be it. Follow that through and one of the other two ends ' +
-        'must be the digit.</p>',
+      tagline: 'Two strong links in parallel lines, aligned at one end.',
+      intro: '<p>Two parallel lines each have two homes for a digit, and two of those homes ' +
+        'share a line — so they cannot both hold it. Follow that through and one of the ' +
+        'other two ends must.</p>',
       rule: '<p>Two strong links in parallel lines, aligned in one perpendicular line &rarr; ' +
         'cells seeing both far ends lose the digit.</p>',
       mistakes: [
-        'Trying to work out <em>which</em> end is the digit. You cannot, and need not.',
+        'Trying to work out <em>which</em> end holds the digit. You cannot, and need not.',
         'Forgetting the zone is "sees both ends" — usually a couple of cells, not a line.'
       ],
       drill: { find: 'the four cells of the skyscraper' }
@@ -954,10 +942,11 @@
     {
       id: 'kite', group: 'chains', title: '2-String Kite', se: 'SE 4.0',
       technique: 'two-string-kite',
-      tagline: 'Same logic, hinged in a box instead.',
+      tagline: 'Two strong links that meet in a box.',
       intro: '<p>A row link and a column link, with one end of each in the same box.</p>' +
         '<p>Skyscraper and kite are one technique — two strong links joined by a weak one — ' +
-        'differing only in which house joins them. Together: <b>turbot fish</b>.</p>',
+        'differing only in which house joins them. Together they are called <b>turbot ' +
+        'fish</b>.</p>',
       rule: '<p>Strong link in a row + strong link in a column, with one end of each in a ' +
         'shared box &rarr; the cell seeing both far ends loses the digit.</p>',
       mistakes: [
@@ -969,10 +958,11 @@
     {
       id: 'coloring', group: 'chains', title: 'Simple coloring', se: 'SE 4.5',
       technique: 'coloring-wrap',
-      tagline: 'Chain logic with no insight required — just paint and look.',
-      intro: '<p>The mechanical way into chain reasoning — reach for it when you are stuck. ' +
-        'One color ends up entirely true and the other entirely false; you never find out ' +
-        'which, and it never matters.</p>',
+      tagline: 'Paint a network of strong links in two colors.',
+      intro: '<p>Follow the strong links on one digit, alternating two colors as you go. One ' +
+        'color is then entirely true and the other entirely false.</p>' +
+        '<p>You cannot tell which, and neither elimination below needs to know. Painting is ' +
+        'mechanical, so coloring is a reasonable move when nothing else is visible.</p>',
       huntWidget: 'paint',
       rule: '<p><b>Wrap:</b> any cell seeing both colors loses the digit. <b>Trap:</b> if ' +
         'two cells of the same color share a house, that entire color is false.</p>',
@@ -985,11 +975,11 @@
     {
       id: 'coloring-trap', group: 'chains', title: 'Coloring: the trap', se: 'SE 4.5',
       technique: 'coloring-trap',
-      tagline: 'When a color contradicts itself, it dies wholesale.',
-      intro: '<p>If two cells of one color share a house, that color wants the digit twice ' +
-        'in one house — impossible.</p>' +
-        '<p>So the whole color dies at once and the other is true everywhere. The closest ' +
-        'thing to a jackpot in classic sudoku.</p>',
+      tagline: 'When one color contradicts itself.',
+      intro: '<p>If two cells of one color share a house, that color wants the digit twice in ' +
+        'one house. Impossible — so the whole color is false and the other is true ' +
+        'everywhere.</p>' +
+        '<p>This gives placements, not just eliminations.</p>',
       rule: '<p>Two same-colored cells sharing a house &rarr; every cell of that color ' +
         'loses the digit, and every cell of the other color <em>is</em> the digit.</p>',
       mistakes: [
@@ -1001,12 +991,12 @@
     {
       id: 'x-chain', group: 'chains', title: 'X-Chains', se: 'SE 5.6',
       technique: 'x-chain',
-      tagline: 'The general single-digit chain. Skyscrapers with more links.',
-      intro: '<p>Nothing new — just longer. Alternate the links, start and end strong, and ' +
-        'at least one endpoint is the digit.</p>' +
-        '<p>Written <span class="chain">(5)r1c1 = (5)r1c5 - (5)r7c5 = (5)r7c9</span>: ' +
-        '<span class="chain">=</span> strong, <span class="chain">-</span> weak. Reading ' +
-        'that is what unlocks forum posts and solver output.</p>',
+      tagline: 'One digit, any number of alternating links.',
+      intro: '<p>A skyscraper with more links. Alternate strong and weak, start and end ' +
+        'strong, and at least one endpoint holds the digit.</p>' +
+        '<p>Written <span class="chain">(5)r1c1 = (5)r1c5 - (5)r7c5 = (5)r7c9</span>, where ' +
+        '<span class="chain">=</span> is strong and <span class="chain">-</span> is weak. ' +
+        'Forum posts and solver output use this notation.</p>',
       rule: '<p>An alternating chain on one digit, strong at both ends &rarr; cells seeing ' +
         'both endpoints lose the digit.</p>',
       mistakes: [
@@ -1018,10 +1008,10 @@
     {
       id: 'xy-wing', group: 'wings', title: 'XY-Wing', se: 'SE 3.6',
       technique: 'xy-wing',
-      tagline: 'A case split with two branches that agree.',
-      intro: '<p>A <b>pivot</b> {X,Y} seeing two wings, {X,Z} and {Y,Z}.</p>' +
-        '<p>Do not look for a shape — it barely has one. It is a case split: the pivot is X ' +
-        'or Y, and both cases put a Z in one of the wings.</p>',
+      tagline: 'A pivot {X,Y} seeing two wings, {X,Z} and {Y,Z}.',
+      intro: '<p>The pivot is X or Y. If X, the {X,Z} wing is Z; if Y, the {Y,Z} wing is Z. ' +
+        'Either way a wing holds Z, so any cell seeing both wings loses it.</p>' +
+        '<p>There is no shape to look for. The pivot only has to see both wings.</p>',
       rule: '<p>Pivot {X,Y} seeing {X,Z} and {Y,Z} &rarr; cells seeing both wings lose Z.</p>',
       mistakes: [
         'Expecting the three cells to be arranged somehow. The pivot just has to see both wings.',
@@ -1032,10 +1022,10 @@
     {
       id: 'xyz-wing', group: 'wings', title: 'XYZ-Wing', se: 'SE 4.4',
       technique: 'xyz-wing',
-      tagline: 'One more branch, one smaller elimination zone.',
-      intro: '<p>The pivot now holds {X,Y,Z}. Three branches instead of two — and every one ' +
-        'still puts a Z among the three cells.</p>' +
-        '<p>The price: a victim must see all three cells, not just the wings.</p>',
+      tagline: 'An XY-Wing whose pivot holds three digits.',
+      intro: '<p>The pivot now holds {X,Y,Z}, so there are three cases instead of two. Every ' +
+        'one still puts a Z somewhere among the three cells.</p>' +
+        '<p>The cost: a victim must see all three cells, not just the two wings.</p>',
       rule: '<p>Pivot {X,Y,Z} seeing {X,Z} and {Y,Z} &rarr; cells seeing all three lose Z.</p>',
       mistakes: [
         'Using the XY-Wing elimination zone. Seeing both wings is no longer enough.',
@@ -1046,11 +1036,12 @@
     {
       id: 'w-wing', group: 'wings', title: 'W-Wing', se: 'SE 4.4',
       technique: 'w-wing',
-      tagline: 'Two identical pairs, joined by a strong link.',
-      intro: '<p>Two cells with the <em>same</em> pair {X,Y}, not seeing each other. Alone ' +
-        'they say nothing.</p>' +
-        '<p>Add a strong link on X touching each of them: one end is X, which kills the X in ' +
-        'the cell it sees, forcing that cell to Y.</p>',
+      tagline: 'Two cells holding the same pair, joined by a strong link.',
+      intro: '<p>Two cells both hold {X,Y} and do not see each other. On their own they say ' +
+        'nothing.</p>' +
+        '<p>Add a strong link on X with one end seeing each of them. One of those ends is X, ' +
+        'which kills the X in the cell it sees and forces that cell to Y. So one of the two ' +
+        'cells is Y, and anything seeing both loses Y.</p>',
       rule: '<p>Two cells both {X,Y}, joined by a strong link on X touching each &rarr; ' +
         'cells seeing both lose Y.</p>',
       mistakes: [
@@ -1062,11 +1053,11 @@
     {
       id: 'remote-pairs', group: 'chains', title: 'Remote pairs', se: 'SE 5.0',
       technique: 'remote-pairs',
-      tagline: 'A chain of identical pairs that alternates all by itself.',
-      intro: '<p>A run of cells all holding the same pair, each seeing the next — so they ' +
-        'are forced to alternate.</p>' +
-        '<p>Count them. An even-length chain has ends of opposite parity, so between them ' +
-        'they take both digits.</p>',
+      tagline: 'A chain of cells all holding the same pair.',
+      intro: '<p>A run of cells all holding {X,Y}, each seeing the next. Neighbors must ' +
+        'differ, so the chain alternates.</p>' +
+        '<p>Count the cells. An even-length chain has ends of opposite parity, so between ' +
+        'them the two ends take both digits.</p>',
       rule: '<p>Even-length chain of identical bi-value cells &rarr; cells seeing both ends ' +
         'lose both digits.</p>',
       mistakes: [
@@ -1079,10 +1070,10 @@
       id: 'xy-chain', group: 'chains', title: 'XY-Chains', se: 'SE 6.6',
       technique: 'xy-chain',
       tagline: 'Bi-value cells strung end to end.',
-      intro: '<p>Where named patterns stop being worth naming. A chain of bi-value cells, ' +
-        'each sharing a digit with the next: if the first is not Z, the far end is forced to ' +
-        'be.</p>' +
-        '<p>An XY-Wing is this with three cells. Remote pairs is this with one repeated pair.</p>',
+      intro: '<p>A chain of bi-value cells, each sharing a digit with the next. If the first ' +
+        'end is not Z, the far end is forced to be — so cells seeing both ends lose Z.</p>' +
+        '<p>An XY-Wing is this with three cells. Remote pairs is this with one repeated ' +
+        'pair.</p>',
       rule: '<p>Chain of bi-value cells whose two ends can both be Z &rarr; cells seeing ' +
         'both ends lose Z.</p>',
       mistakes: [
@@ -1092,30 +1083,27 @@
       drill: { find: 'the cells of the chain' }
     },
     {
-      id: 'aic', group: 'chains', title: 'AIC: what all of that was',
+      id: 'aic', group: 'chains', title: 'Alternating inference chains',
       custom: 'aic',
-      tagline: 'One notation and one idea behind every technique above.',
-      intro: '<p>Here is the payoff for learning strong links as an object rather than as ' +
-        'trivia.</p>' +
-        '<p>An <b>Alternating Inference Chain</b> is any chain of nodes joined by links ' +
-        'that alternate strong and weak, starting and ending strong. Its conclusion is ' +
-        'always the same: <em>at least one endpoint is true, so anything incompatible with ' +
-        'both endpoints is false.</em></p>' +
-        '<p>Every technique below is that one theorem wearing a different hat. Pick one ' +
-        'and compare the chain string with the grid: the shape of the argument is ' +
-        'identical every time, only the nodes change.</p>' +
-        '<p class="muted">An X-Wing is the same thing again, stated as a count rather ' +
-        'than a chain: two rows needing a digit, two columns to put it in.</p>'
+      tagline: 'One notation and one rule covering every technique above.',
+      intro: '<p>An <b>alternating inference chain</b> is any chain of nodes joined by links ' +
+        'that alternate strong and weak, starting and ending strong. The conclusion is ' +
+        'always the same: at least one endpoint is true, so anything incompatible with both ' +
+        'endpoints is false.</p>' +
+        '<p>Pick a technique below and compare its chain string with the grid. The argument ' +
+        'is identical each time; only the nodes change.</p>' +
+        '<p class="muted">An X-Wing is the same thing stated as a count rather than a chain: ' +
+        'two rows needing a digit, two columns to put it in.</p>'
     },
     {
       id: 'unique-rectangle', group: 'uniqueness', title: 'Unique rectangles', se: 'SE 4.2',
       technique: 'unique-rectangle-1',
-      tagline: 'Reasoning from the fact that the puzzle was published.',
-      intro: '<p>These feel illegitimate, and here is why: they follow not from the rules, ' +
-        'but from the fact that a published puzzle has exactly one solution.</p>' +
+      tagline: 'Reasoning from the puzzle having exactly one solution.',
+      intro: '<p>These follow from the puzzle having one solution rather than from the rules ' +
+        'of sudoku. If your source does not guarantee uniqueness, skip this group.</p>' +
         '<p>The <b>deadly pattern</b>: four rectangle corners spanning two boxes, all down to ' +
-        'the same pair. Swap the pair diagonally and both fills are legal — two solutions. So ' +
-        'it can never happen.</p>',
+        'the same pair. Swap the pair diagonally and both fills are legal, giving two ' +
+        'solutions. So it can never occur.</p>',
       rule: '<p>Four cells in two rows, two columns and <em>two boxes</em> all containing ' +
         '{X,Y}, with extras in only one of them &rarr; that cell cannot be X or Y.</p>',
       mistakes: [
@@ -1127,10 +1115,10 @@
     {
       id: 'ur-type-2', group: 'uniqueness', title: 'Unique rectangle type 2', se: 'SE 4.5',
       technique: 'unique-rectangle-2',
-      tagline: 'Two extras, one shared digit, the familiar conclusion.',
+      tagline: 'Two corners carrying the same extra digit.',
       intro: '<p>Same rectangle, but two corners carry the <em>same</em> extra candidate Z.</p>' +
-        '<p>If neither took the Z, all four would collapse to the deadly pair. So one of them ' +
-        'is Z — the "one of these two" shape yet again.</p>',
+        '<p>If neither took the Z, all four corners would collapse to the deadly pair. So one ' +
+        'of them is Z, and cells seeing both lose it.</p>',
       rule: '<p>Rectangle on {X,Y} with two corners carrying the same single extra Z &rarr; ' +
         'cells seeing both of those corners lose Z.</p>',
       mistakes: [
@@ -1142,11 +1130,12 @@
     {
       id: 'bug', group: 'uniqueness', title: 'BUG+1', se: 'SE 5.6',
       technique: 'bug-plus-one',
-      tagline: 'When the grid goes almost entirely bi-value, one cell gives itself away.',
+      tagline: 'Every unsolved cell bi-value except one.',
       intro: '<p>A grid where every unsolved cell is bi-value and every digit appears twice ' +
-        'in every house always has an <em>even</em> number of solutions — so a proper puzzle ' +
-        'can never reach one.</p>' +
-        '<p>If you are one candidate away, that candidate is what prevents it.</p>',
+        'in every house has an <em>even</em> number of solutions, so a proper puzzle can ' +
+        'never reach one.</p>' +
+        '<p>If the position is one candidate away from that state, that candidate is what ' +
+        'prevents it, so it is the digit.</p>',
       rule: '<p>All cells bi-value except one with three &rarr; that cell takes whichever of ' +
         'its three candidates appears three times in its houses.</p>',
       mistakes: [
@@ -1158,7 +1147,7 @@
     {
       id: 'frontier', group: 'beyond', title: 'Where technique runs out',
       custom: 'frontier',
-      tagline: 'ALS, forcing nets, and the point where pattern-finding becomes searching.',
+      tagline: 'ALS, forcing nets, and where pattern-finding turns into search.',
       intro: ''
     }
   ];

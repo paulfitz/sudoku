@@ -890,6 +890,35 @@ Two things worth recording:
   and the two ends killing identical cells) were verified by breaking the widget in a
   plausible way and watching them fail.
 
+### Part Q — A copy pass
+
+Reported: the writing was *"hazy and self-concerned"*. It was. Three habits, all mine:
+
+1. **Taglines promising a feeling instead of naming the thing.** "Not a shape. A counting
+   argument that happens to look like a rectangle." "The mental flip that everything later
+   depends on." A reader scanning the sidebar learned nothing from those. They now state
+   the pattern: "One digit, two rows, two columns." "A digit with one place left in a
+   house." That is a real utility gain, not just a tone fix — the tagline became the
+   one-line definition.
+2. **Commentary on the site's own method.** "Rather than describe it, here it is to push
+   on." "Here is the payoff for learning strong links as an object rather than as trivia."
+   "That is what every chain in the rest of this course is doing." The page telling you
+   what it is doing is not the page doing it. All cut.
+3. **Aphorisms where a fact belongs.** "The names are whimsical; the counting is not."
+   "Hidden means hidden." "So the two ends are welded together." These read as insight and
+   carry none.
+
+The test that catches the third habit is length: one shortened frame ("So: 5 from r5c7.")
+tripped the walkthrough check's 20-character floor, which was right to fire — the frame
+had been cut down to a bare result with no statement of what produced it. It now says
+"So every cell seeing both ends loses the 5". Terseness is not the goal; a sentence
+carrying a fact is.
+
+**American English is now enforced, not remembered.** A whole widget had drifted back to
+`colour`/`neighbour` while the lesson beside it said `coloring`. `tools/test.js` scans the
+site sources for British spellings and fails the build. A one-off pass cannot hold a
+convention; a check can. Verified by introducing `colour` and watching it fail.
+
 ### Not built
 
 Jellyfish and naked quads are detected and will appear in the playground's hints, but have

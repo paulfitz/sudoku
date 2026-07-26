@@ -183,14 +183,13 @@
           doneBtn.textContent = '✓ Marked as read';
           doneBtn.className = 'btn ghost';
         });
-      add(doneCard, h('span', null, 'Nothing to solve on this page — tick it off when ' +
-        'you have had a play. '));
+      add(doneCard, h('span', null, 'No drill on this page. Tick it off when you are done. '));
       doneCard.appendChild(doneBtn);
     } else {
       walkthroughStage(page, lesson, startStep);
     }
 
-    // How to *find* it, as opposed to how to recognise it once found — the gap the
+    // How to *find* it, as opposed to how to recognize it once found — the gap the
     // walkthroughs kept leaving.
     if (lesson.hunt || lesson.huntWidget) {
       var hu = add(page, h('section', 'card hunt'));
@@ -301,7 +300,7 @@
     navRow.appendChild(backBtn);
     navRow.appendChild(nextBtn);
 
-    // Reaching the end used to just grey out Next, leaving the drill ~800px below with
+    // Reaching the end used to just gray out Next, leaving the drill ~800px below with
     // nothing pointing at it.
     var toDrill = btn('Now you try →', 'btn primary', function () {
       var d = page.querySelector('.drill');
@@ -384,8 +383,8 @@
             'in fact correct.</p>';
         } else {
           verdict = '<p class="verdict"><b>No contradiction — the ripple runs out.</b> ' +
-            'Forced moves alone don\'t settle it, which is exactly why the technique in ' +
-            'this lesson exists.</p>';
+            'Forced moves alone do not settle it. That is what the technique on this ' +
+            'page is for.</p>';
         }
       }
 
@@ -641,7 +640,7 @@
         } else if (phase === 'consequence') {
           var r2 = D.checkConsequences(found, picks);
           if (r2.state === 'correct') {
-            say('Correct — you found the pattern <em>and</em> what it does. ' +
+            say('Correct — the pattern and its eliminations. ' +
               '<a href="#/lesson/' + nextLessonId(lesson) + '">Next lesson &rarr;</a>', 'good');
             markDone(lesson.id);
             phase = 'done';
@@ -715,8 +714,7 @@
         clear(padHost);
         phase = 'reveal';
         var f = drill.primary;
-        add(side, h('div', 'prompt', 'Here it is, worked through. Then try a fresh grid — ' +
-          'finding it yourself is the part that sticks.'));
+        add(side, h('div', 'prompt', 'Here it is, worked through. Then try a fresh grid.'));
         var player = stepPlayer(side, bv,
           { board: drill.board, givens: drill.givens }, L.scriptFor(f));
         player.nav.appendChild(btn('Try another grid', 'btn', function () {
@@ -860,9 +858,9 @@
     var info = add(side, h('div', 'step-text'));
 
     var ACTS = [
-      { label: '1 · Push on one', run: seesawAct },
-      { label: '2 · Chain two', run: chainAct },
-      { label: '3 · Find your own', run: findAct }
+      { label: 'Switch one off', run: seesawAct },
+      { label: 'Chain two together', run: chainAct },
+      { label: 'Find your own', run: findAct }
     ];
     ACTS.forEach(function (a, i) {
       tabs.appendChild(btn(a.label, 'btn small act-tab', function () { open(i); }));
@@ -968,8 +966,8 @@
           '<p class="verdict good">No ' + d + ' in ' + cellTag(gone) + ', so the only home ' +
           'left in ' + house + ' is ' + cellTag(lit) + '. <b>' + S.cellName(lit) + ' is the ' +
           d + '.</b></p>' +
-          '<p>Notice you needed to know nothing about ' + cellTag(lit) + ' itself. Pushing ' +
-          'one end down raised the other.</p>' +
+          '<p>You did not have to look at ' + cellTag(lit) + ' at all. The count in ' +
+          house + ' settled it.</p>' +
           '<p class="muted">Now try switching that one off as well.</p>';
       } else {
         marks.push({ cell: l.a, digit: d, kind: 'elim' });
@@ -980,9 +978,9 @@
         ui.info.innerHTML =
           '<p class="verdict bad">Both off — and now ' + house + ' has nowhere at all to put ' +
           'its ' + digTag(d) + '. That cannot happen.</p>' +
-          '<p>So the two ends are welded together: <b>they cannot both be off.</b> At least ' +
-          'one of ' + cellTag(l.a) + ' and ' + cellTag(l.b) + ' is the ' + d + '. A pair of ' +
-          'cells tied like that is a <b>strong link</b>.</p>' +
+          '<p>So <b>they cannot both be off.</b> At least one of ' + cellTag(l.a) + ' and ' +
+          cellTag(l.b) + ' is the ' + d + '. A pair of cells tied together that way is a ' +
+          '<b>strong link</b>.</p>' +
           '<p class="muted">Tap one of them again to let it back on, or try another link.</p>';
       }
 
@@ -1054,8 +1052,8 @@
           'ends</b> are ' + cellTag(ends[0]) + ' and ' + cellTag(ends[1]) + '.</p>' +
           '<p><b>Tap either far end</b> to suppose it is <em>not</em> the ' + digTag(d) +
           '.</p>' +
-          '<p class="muted">It genuinely does not matter which you pick. Try one, then ' +
-          'start over and try the other.</p>';
+          '<p class="muted">Either one works. Try it from one end, then start over and try ' +
+          'the other.</p>';
       } else {
         var o = walk();
         for (var i = 0; i <= step; i++) {
@@ -1079,8 +1077,7 @@
             S.cellName(ends[0]) + ' and ' + S.cellName(ends[1]) + ' is the ' + d + '</b>.</p>';
 
           if (claim === null) {
-            html += '<p>Which one? Nothing here can tell you — and that turns out not to ' +
-              'matter. Claim either:</p>';
+            html += '<p>Which one is not determined. Claim either and see what happens:</p>';
             ends.forEach(function (e) {
               ui.controls.appendChild(btn('Say ' + S.cellName(e) + ' is the ' + d,
                 'btn small', function () { claim = e; draw(); }));
@@ -1098,11 +1095,9 @@
             html += '<p class="verdict bad">If ' + cellTag(claim) + ' is the ' + d + ', then ' +
               S.cellList(victims) + ' cannot be — each one shares a house with it.</p>';
             if (ends.every(function (e) { return claimed[e]; })) {
-              html += '<p class="verdict good"><b>Same cells, either way.</b> You still do ' +
-                'not know which far end holds the ' + d + ', and you no longer need to: ' +
-                S.cellList(victims) + ' lose it whichever end it is. That is the ' +
-                'elimination — and that is what every chain in the rest of this course ' +
-                'is doing.</p>';
+              html += '<p class="verdict good"><b>Same cells, either way.</b> ' +
+                S.cellList(victims) + ' lose the ' + d + ' whichever end holds it, so the ' +
+                'elimination stands without deciding which.</p>';
             } else {
               html += '<p class="muted">Now claim the other end and watch what changes.</p>';
             }
@@ -1189,8 +1184,8 @@
           '</b> homes (' + S.cellList(homes) + ')';
       });
       message = '<p class="verdict bad">Not a strong link: ' + counts.join(', and ') +
-        '. Two is the number that welds a pair together — three or more and knocking one ' +
-        'out proves nothing.</p>';
+        '. A strong link needs exactly two. With three or more, knocking one out proves ' +
+        'nothing about the others.</p>';
     }
 
     ui.controls.appendChild(btn('Another digit', 'btn small', function () {
@@ -1201,7 +1196,7 @@
     ui.controls.appendChild(btn('Show me all of them', 'btn small ghost', function () {
       revealed = !revealed; draw();
     }));
-    // The other two acts colour the cells they are talking about. This one does not — the
+    // The other two acts color the cells they are talking about. This one does not — the
     // whole exercise is finding marks nobody has pointed at — so the emphasis control
     // earns its place here in a way it would not there.
     emphasisButton(ui.controls);
@@ -1365,16 +1360,15 @@
 
   function frontierStage(page) {
     add(page, h('div', 'prose', [
-      '<p>Everything so far has been a <em>pattern</em>: something you can learn to see. ',
-      'Past this point the techniques get less like seeing and more like searching, and it ',
-      'is worth knowing the shape of the territory even if you never go there.</p>',
+      '<p>Everything so far has been a pattern you can learn to see. Past this point the ',
+      'techniques are searches. This page describes them; it does not teach them.</p>',
 
       '<h3>Almost Locked Sets</h3>',
       '<p>A set of <em>n</em> cells holding <em>n+1</em> candidates is <b>almost</b> a naked ',
       'subset — it becomes one the moment any single candidate is removed. ALS techniques ',
       '(ALS-XZ, ALS-XY-Wing, Sue de Coq, Death Blossom) link two or more such sets and use ',
-      'the "if this one collapses, that one does not" argument. They are powerful and, for ',
-      'most people, not findable by eye on a real grid.</p>',
+      'the "if this one collapses, that one does not" argument. They are powerful and hard ',
+      'to find by eye on a real grid.</p>',
 
       '<h3>Grouped chains and nice loops</h3>',
       '<p>An AIC node need not be a single cell: it can be all the candidates for a digit ',
@@ -1545,9 +1539,9 @@
     var entries = D.entriesFor('x-wing');
     if (!entries.length) return;
 
-    add(host, h('p', 'prose', 'The search has two moves. Pick one digit; find the lines ' +
-      'where it has exactly <b>two</b> homes left; then check whether two of those lines ' +
-      'use the <b>same pair</b> of columns. That is the whole hunt.'));
+    add(host, h('p', 'prose', 'The search has two moves. Pick one digit and find the lines ' +
+      'where it has exactly <b>two</b> homes left. Then check whether two of those lines ' +
+      'use the <b>same pair</b> of columns.'));
 
     var stage = add(host, h('div', 'stage'));
     var boardPane = add(stage, h('div', 'board-pane'));
@@ -1694,10 +1688,10 @@
   }
 
   /**
-   * Paint-it-yourself colouring. The lesson says "colour a cell, colour its strong-link
+   * Paint-it-yourself coloring. The lesson says "color a cell, color its strong-link
    * partner the opposite, and keep going" — an algorithm stated in words, illustrated with
    * a finished network. Here you run it: click a cell to start, then click any cell joined
-   * to something already painted, and the site tells you which colour it is forced to take
+   * to something already painted, and the site tells you which color it is forced to take
    * and why. When the network is complete it offers to look for the payoff.
    */
   function paintTrainer(host) {
@@ -1705,7 +1699,7 @@
     if (!entries.length) return;
 
     add(host, h('p', 'prose', 'Every solid line is a strong link: one end or the other is ' +
-      'the digit. So neighbours must take opposite colours. Click any cell to start, then ' +
+      'the digit. So neighbors must take opposite colors. Click any cell to start, then ' +
       'keep clicking cells joined to what you have already painted.'));
 
     var stage = add(host, h('div', 'stage'));
@@ -1717,7 +1711,7 @@
 
     var board, givens, digit, links, adj, colors, done, comp;
 
-    /** The connected network reachable from `start` — colouring works one at a time. */
+    /** The connected network reachable from `start` — coloring works one at a time. */
     function componentOf(start) {
       var seen = {}, queue = [start], out = [];
       seen[start] = 1;
@@ -1748,7 +1742,7 @@
     }
 
     var bv = new BoardView(boardPane, {
-      label: 'Colouring practice grid',
+      label: 'Coloring practice grid',
       onCell: function (cell) { paint(cell); },
       onCandidate: function (cell, d, ev) { ev.stopPropagation(); paint(cell); }
     });
@@ -1768,22 +1762,22 @@
       if (!painted.length) {
         colors[cell] = 0;
         comp = componentOf(cell);   // follow this network only; the rest fades away
-        draw('<p>Started at <b class="rc">' + S.cellName(cell) + '</b>. The colour itself ' +
+        draw('<p>Started at <b class="rc">' + S.cellName(cell) + '</b>. The color itself ' +
           'means nothing yet — it is a label, not a claim that it is true.</p>' +
           '<p class="muted">Everything not joined to this cell has faded out: ' + comp.length +
           ' cells form one network. Other networks are separate arguments.</p>');
         return;
       }
-      var neighbour = (adj[cell] || []).filter(function (n) { return colors[n] !== undefined; })[0];
-      if (neighbour === undefined) {
+      var neighbor = (adj[cell] || []).filter(function (n) { return colors[n] !== undefined; })[0];
+      if (neighbor === undefined) {
         draw('<p><b class="rc">' + S.cellName(cell) + '</b> is in the network, but not ' +
           'strong-linked to anything you have painted yet. Work outwards from what you have.</p>');
         return;
       }
-      colors[cell] = 1 - colors[neighbour];
+      colors[cell] = 1 - colors[neighbor];
       var total = Object.keys(colors).length, size = comp.length;
       var msg = '<p><b class="rc">' + S.cellName(cell) + '</b> is strong-linked to <b class="rc">' +
-        S.cellName(neighbour) + '</b>, so it must take the opposite colour. ' +
+        S.cellName(neighbor) + '</b>, so it must take the opposite color. ' +
         '<span class="muted">' + total + ' of ' + size + ' painted.</span></p>';
       if (total === size) {
         done = true;
@@ -1796,21 +1790,21 @@
       var groups = [[], []];
       Object.keys(colors).forEach(function (c) { groups[colors[c]].push(+c); });
 
-      // trap: two cells of one colour sharing a house
+      // trap: two cells of one color sharing a house
       for (var g = 0; g < 2; g++) {
         for (var i = 0; i < groups[g].length; i++) {
           for (var j = i + 1; j < groups[g].length; j++) {
             if (S.sees(groups[g][i], groups[g][j])) {
-              return '<p><b>Network complete — and one colour just contradicted itself.</b> ' +
+              return '<p><b>Network complete — and one color just contradicted itself.</b> ' +
                 '<b class="rc">' + S.cellName(groups[g][i]) + '</b> and <b class="rc">' +
-                S.cellName(groups[g][j]) + '</b> share a house but share a colour, which ' +
-                'would put two ' + digit + 's in one house. So every cell of that colour is ' +
-                'false, and every cell of the other colour <em>is</em> the ' + digit + '.</p>';
+                S.cellName(groups[g][j]) + '</b> share a house but share a color, which ' +
+                'would put two ' + digit + 's in one house. So every cell of that color is ' +
+                'false, and every cell of the other color <em>is</em> the ' + digit + '.</p>';
             }
           }
         }
       }
-      // wrap: an outsider seeing both colours
+      // wrap: an outsider seeing both colors
       var victims = [];
       for (var c2 = 0; c2 < 81; c2++) {
         if (!board.has(c2, digit) || colors[c2] !== undefined) continue;
@@ -1818,14 +1812,14 @@
             groups[1].some(function (x) { return S.sees(c2, x); })) victims.push(c2);
       }
       if (victims.length) {
-        return '<p><b>Network complete.</b> One colour is true and the other false — you ' +
+        return '<p><b>Network complete.</b> One color is true and the other false — you ' +
           'still do not know which, and you do not need to. Look at ' +
           victims.map(function (v) { return '<b class="rc">' + S.cellName(v) + '</b>'; }).join(', ') +
-          ': ' + (victims.length === 1 ? 'it sees' : 'each sees') + ' <em>both</em> colours, ' +
+          ': ' + (victims.length === 1 ? 'it sees' : 'each sees') + ' <em>both</em> colors, ' +
           'so ' + (victims.length === 1 ? 'it' : 'they') + ' cannot hold the ' + digit +
           ' either way.</p>';
       }
-      return '<p><b>Network complete</b> — but nothing outside it sees both colours, so this ' +
+      return '<p><b>Network complete</b> — but nothing outside it sees both colors, so this ' +
         'one pays nothing. That happens; try another position.</p>';
     }
 
@@ -2039,8 +2033,8 @@
     var head = add(page, h('header', 'page-head'));
     add(head, h('div', 'eyebrow', 'Watch'));
     add(head, h('h1', null, 'A whole puzzle, move by move'));
-    add(head, h('p', 'tagline', 'Every move begins by trying the easy things and failing. ' +
-      'That failing is most of solving, and it is usually invisible.'));
+    add(head, h('p', 'tagline', 'Each move tries the easy techniques first and mostly fails. ' +
+      'The failed attempts are shown here alongside the one that worked.'));
 
     // technique -> the lesson that teaches it
     var lessonFor = {};

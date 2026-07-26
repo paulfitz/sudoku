@@ -1,9 +1,9 @@
-# Advanced Sudoku — shown rather than described
+# Advanced Sudoku
 
-An interactive site for teaching advanced sudoku technique: X-Wings, fish, chains,
-coloring, wings and uniqueness patterns. Built around the observation that these
-techniques are about *relationships between distant cells* and about *counterfactuals*,
-which are the two things prose is worst at.
+An interactive site for teaching advanced sudoku technique: subsets, intersections, fish,
+chains, coloring, wings and uniqueness patterns. Each lesson runs on a real position, with
+a stepped walkthrough, a drill that checks both the pattern and its eliminations, and a
+what-if engine for testing any candidate by contradiction.
 
 **Live at <https://paulfitz.github.io/sudoku/>** — or open `site/index.html` straight from
 disk. No server, no dependencies, no build required to run it; the build step only

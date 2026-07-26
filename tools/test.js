@@ -145,6 +145,51 @@ var perTechnique = Object.create(null);
     failures.length + ' problems\n');
 })();
 
+// ------------------------------------------------------------- spelling
+//
+// The site is written in American English. That was done once as a pass over the copy,
+// which is exactly the kind of decision that decays: a whole widget had drifted back to
+// "colour"/"neighbour" while the lesson beside it said "coloring". A pass cannot hold a
+// convention. A check can.
+(function checkSpelling() {
+  var BRITISH = [
+    [/\bcolour(s|ed|ing)?\b/i, 'color'],
+    [/\bneighbour(s|ing|hood)?\b/i, 'neighbor'],
+    [/\b(recognis|memoris|generalis|organis|analys|emphasis|normalis|summaris)(e|es|ed|ing)\b/i,
+      '-ize'],
+    [/\bcentre\b/i, 'center'],
+    [/\bbehaviour\b/i, 'behavior'],
+    [/\bfavour(s|ed|ite)?\b/i, 'favor'],
+    [/\bgrey\b/i, 'gray'],
+    [/\bdefence\b/i, 'defense'],
+    [/\bwhilst\b/i, 'while'],
+    [/\bpractis(e|ing)\b/i, 'practice/practicing'],
+    [/\blicence\b/i, 'license']
+  ];
+  var files = ['site/index.html', 'site/css/style.css',
+    'site/js/app.js', 'site/js/lessons.js', 'site/js/drills.js',
+    'site/js/board.js', 'site/js/techniques.js', 'site/js/sudoku.js',
+    'site/js/hypothesis.js'];
+  var hits = 0;
+  files.forEach(function (rel) {
+    var full = path.join(__dirname, '..', rel);
+    var text;
+    try { text = require('fs').readFileSync(full, 'utf8'); } catch (e) { return; }
+    text.split('\n').forEach(function (line, i) {
+      BRITISH.forEach(function (pair) {
+        var m = line.match(pair[0]);
+        // "emphasise" would be a false positive on the emphasis* identifiers, so the
+        // pattern above only fires on the verb forms; anything matching is real.
+        if (!m) return;
+        hits++;
+        failures.push('spelling: ' + rel + ':' + (i + 1) + ' "' + m[0] +
+          '" — this site uses American English (' + pair[1] + ')');
+      });
+    });
+  });
+  console.log('spelling: ' + files.length + ' files scanned, ' + hits + ' British spellings\n');
+})();
+
 var PREPS = [1, 3, 5, 8, 10, 12, 14, 16];
 
 for (var n = 0; n < COUNT; n++) {
