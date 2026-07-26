@@ -347,7 +347,7 @@ a.skip:hover { color: var(--accent); border-bottom-color: var(--accent); }
   color: var(--ink);
 }
 /* Clues vs worked-out digits, distinguished the way a newspaper puzzle does it — printed
-   clues heavy, your own entries lighter. This used to use the accent colour, which also
+   clues heavy, your own entries lighter. This used to use the accent color, which also
    means strong link, selection, focus, case-split group A and hyperlink. Structure gets
    the hue; content does not. */
 .cell.given .value { color: var(--ink); font-weight: 700; }
