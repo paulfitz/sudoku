@@ -154,9 +154,10 @@
         'they don\'t need to. ' + f.cells.length + ' cells, ' + ds.length +
         ' digits between them, is enough.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells, marks: patternMarks(f), dim: true }),
-      frame('Those ' + ds.length + ' digits are locked into those ' + f.cells.length +
-        ' cells, so nothing else in ' + S.houseName(S.HOUSE_META[h]) + ' can use them: ' +
-        elimSummary(f) + '.',
+      frame('Those ' + ds.length + ' cells will use up all ' + ds.length + ' digits ' +
+        'between them, so there is none left for the rest of ' +
+        S.houseName(S.HOUSE_META[h]) + '. Other cells there still <em>show</em> those ' +
+        'digits — that is not a problem, it is the point: ' + elimSummary(f) + '.',
         { houses: [{ house: h, kind: 'base' }], focus: f.cells,
           marks: patternMarks(f).concat(elimMarks(f)) })
     ];
@@ -767,7 +768,10 @@
         'remove those candidates from every other cell of that house.</p>',
       mistakes: [
         'Expecting each cell to show all the digits. {1,2} {2,3} {1,3} is a fine triple.',
-        'Spotting the pattern and forgetting to do the eliminations.'
+        'Spotting the pattern and forgetting to do the eliminations.',
+        'Worrying that another cell in the house still shows one of the pair\'s digits. ' +
+        'That is not a problem, it is the payoff — the two cells use both digits up, so ' +
+        'that candidate is exactly what gets struck.'
       ],
       drill: { find: 'two cells in one house with the same two candidates — one that still clears something' }
     },
@@ -782,7 +786,11 @@
         'digits in.</p>',
       mistakes: [
         'Pattern-matching the shapes. Union the sets instead.',
-        'Including a cell with four candidates — every cell must fit inside the three.'
+        'Including a cell with four candidates — every cell must fit inside the three.',
+        'Expecting the rest of the house to be clear of those digits. It usually is not, ' +
+        'and that is the whole point — those are the candidates the triple strikes. A ' +
+        'triple with nothing left to remove is not a move. Needing the house to be clear ' +
+        'is the <em>hidden</em> subset\'s condition, not this one.'
       ],
       drill: { find: 'three cells in one house whose candidates add up to only three digits, with those digits still to clear' }
     },
