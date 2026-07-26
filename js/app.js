@@ -831,54 +831,406 @@
     bv.render({ board: drill.board, givens: drill.givens });
   }
 
+  /**
+   * Strong links, taught by operating one.
+   *
+   * The first version of this page was a catalogue: pick a digit, read a list of its
+   * strong links. It restated the definition and left unshown the two things people
+   * actually get stuck on — that "at least one of these is true" is a switch you can push
+   * (turn one end off, the other lights up), and that two of them chained give a real
+   * elimination without ever revealing which end holds the digit. Both are things you find
+   * out by doing. Neither survives being written down. Hence three acts and little prose.
+   */
   function strongLinkStage(page) {
-    var drill = anyPosition('x-wing', 0);
-    if (!drill) return;
     var stage = add(page, h('section', 'stage'));
+    // The tabs span both columns rather than sitting in the narrative: they choose what
+    // the whole page is doing, and on a phone the stage stacks, which would otherwise
+    // bury them under the board and its buttons.
+    var tabs = add(stage, h('div', 'act-tabs'));
     var boardPane = add(stage, h('div', 'board-pane'));
     var side = add(stage, h('div', 'narrative'));
 
-    var digit = 1;
-    var bv = new BoardView(boardPane, {});
-    var picker = add(boardPane, h('div', 'controls'));
-    for (var d = 1; d <= 9; d++) {
-      (function (dd) {
-        picker.appendChild(btn(String(dd), 'btn digit', function () { digit = dd; draw(); }));
-      })(d);
-    }
+    // whichever act is on screen owns the clicks
+    var onPick = null;
+    var bv = new BoardView(boardPane, {
+      onCell: function (c) { if (onPick) onPick(c); },
+      onCandidate: function (c) { if (onPick) onPick(c); }
+    });
+    var controls = add(boardPane, h('div', 'controls'));
     var info = add(side, h('div', 'step-text'));
 
+    var ACTS = [
+      { label: '1 · Push on one', run: seesawAct },
+      { label: '2 · Chain two', run: chainAct },
+      { label: '3 · Find your own', run: findAct }
+    ];
+    ACTS.forEach(function (a, i) {
+      tabs.appendChild(btn(a.label, 'btn small act-tab', function () { open(i); }));
+    });
+
+    function open(i) {
+      Array.prototype.forEach.call(tabs.children, function (b, k) {
+        b.className = 'btn small act-tab' + (k === i ? ' active' : '');
+        b.setAttribute('aria-pressed', k === i ? 'true' : 'false');
+      });
+      clear(controls);
+      onPick = null;
+      ACTS[i].run({
+        bv: bv, info: info, controls: controls,
+        picks: function (fn) { onPick = fn; }
+      });
+    }
+    open(0);
+  }
+
+  function cellTag(c) { return '<b class="rc">' + S.cellName(c) + '</b>'; }
+  function digTag(d) { return '<b class="dig">' + d + '</b>'; }
+
+  /**
+   * Every strong link on a board, one entry per (digit, pair), best example first.
+   *
+   * "Best" is not cosmetic. A row with only two empty cells in it has a strong link on
+   * every digit it is missing, and that link teaches nothing — of course the digit has two
+   * homes, there are only two places left. The instructive link is the one in a house with
+   * plenty of room where the digit has still been squeezed down to two, so the count is a
+   * fact about the digit rather than about the leftovers. Order by elbow room.
+   */
+  function allStrongLinks(board) {
+    var out = [], seen = Object.create(null);
+    for (var d = 1; d <= 9; d++) {
+      T.strongLinks(board, d).forEach(function (l) {
+        var k = l.digit + ':' + Math.min(l.a, l.b) + ':' + Math.max(l.a, l.b);
+        if (seen[k]) return;
+        seen[k] = 1;
+        l.room = S.HOUSES[l.house].filter(function (c) { return !board.values[c]; }).length;
+        out.push(l);
+      });
+    }
+    // ties break by house index, which puts rows and columns before boxes: a link inside a
+    // box is the hardest one to read as "two homes" the first time you meet one
+    return out.sort(function (a, b) { return (b.room - a.room) || (a.house - b.house); });
+  }
+
+  /** The house a link lives in: for a strong link, the one where the digit is down to two. */
+  function linkHouse(board, a, b, digit, strong) {
+    var shared = S.housesOf[a].filter(function (x) { return S.housesOf[b].indexOf(x) >= 0; });
+    if (strong) {
+      for (var i = 0; i < shared.length; i++) {
+        if (board.cellsFor(shared[i], digit).length === 2) return shared[i];
+      }
+    }
+    return shared[0];
+  }
+
+  /* Act 1. A strong link behaves like a see-saw, and the way to learn a see-saw is to push
+   * on it. Switch one end off and the widget lights the other. Try to switch off both and
+   * it shows you the house with nowhere left to put the digit — so the definition arrives
+   * as the result of doing the illegal thing, rather than as a warning against it. */
+  function seesawAct(ui) {
+    var drill = anyPosition('x-wing', 0);
+    if (!drill) return;
+    var board = drill.board;
+    var links = allStrongLinks(board);
+    if (!links.length) return;
+    var idx = 0, off = [];
+
+    ui.controls.appendChild(btn('Another link', 'btn small', function () {
+      idx = (idx + 1) % links.length; off = []; draw();
+    }));
+    ui.controls.appendChild(btn('Start over', 'btn small ghost', function () {
+      off = []; draw();
+    }));
+    ui.picks(function (cell) {
+      var l = links[idx];
+      if (cell !== l.a && cell !== l.b) return;
+      var at = off.indexOf(cell);
+      if (at >= 0) off.splice(at, 1); else off.push(cell);
+      draw();
+    });
+
     function draw() {
-      Array.prototype.forEach.call(picker.children, function (b, i) {
-        b.className = 'btn digit' + (i + 1 === digit ? ' active' : '');
+      var l = links[idx], d = l.digit;
+      var house = S.houseName(S.HOUSE_META[l.house]);
+      var marks = [], cellClass = {};
+
+      if (!off.length) {
+        ui.info.innerHTML =
+          '<p>Only the ' + digTag(d) + ' is showing. In ' + house + ' it has exactly two ' +
+          'homes left, ' + cellTag(l.a) + ' and ' + cellTag(l.b) + '. No other cell in ' +
+          house + ' can take it.</p>' +
+          '<p><b>Switch one of them off.</b> Tap either one.</p>';
+      } else if (off.length === 1) {
+        var gone = off[0], lit = gone === l.a ? l.b : l.a;
+        marks.push({ cell: gone, digit: d, kind: 'elim' });
+        marks.push({ cell: lit, digit: d, kind: 'true' });
+        cellClass[lit] = 'trial';
+        ui.info.innerHTML =
+          '<p class="verdict good">No ' + d + ' in ' + cellTag(gone) + ', so the only home ' +
+          'left in ' + house + ' is ' + cellTag(lit) + '. <b>' + S.cellName(lit) + ' is the ' +
+          d + '.</b></p>' +
+          '<p>Notice you needed to know nothing about ' + cellTag(lit) + ' itself. Pushing ' +
+          'one end down raised the other.</p>' +
+          '<p class="muted">Now try switching that one off as well.</p>';
+      } else {
+        marks.push({ cell: l.a, digit: d, kind: 'elim' });
+        marks.push({ cell: l.b, digit: d, kind: 'elim' });
+        S.HOUSES[l.house].forEach(function (c) {
+          if (!board.values[c]) cellClass[c] = 'dead';
+        });
+        ui.info.innerHTML =
+          '<p class="verdict bad">Both off — and now ' + house + ' has nowhere at all to put ' +
+          'its ' + digTag(d) + '. That cannot happen.</p>' +
+          '<p>So the two ends are welded together: <b>they cannot both be off.</b> At least ' +
+          'one of ' + cellTag(l.a) + ' and ' + cellTag(l.b) + ' is the ' + d + '. A pair of ' +
+          'cells tied like that is a <b>strong link</b>.</p>' +
+          '<p class="muted">Tap one of them again to let it back on, or try another link.</p>';
+      }
+
+      ui.bv.render({
+        board: board, givens: drill.givens, solo: d,
+        houses: [{ house: l.house, kind: 'base' }],
+        links: [{ a: l.a, b: l.b, digit: d, kind: 'strong' }],
+        focus: [l.a, l.b], keep: S.HOUSES[l.house], dim: true,
+        marks: marks, cellClass: cellClass
       });
-      var raw = T.strongLinks(drill.board, digit);
-      var byPair = {}, links = [];
-      raw.forEach(function (l) {
-        var k = Math.min(l.a, l.b) + ':' + Math.max(l.a, l.b);
-        if (!byPair[k]) { byPair[k] = { a: l.a, b: l.b, houses: [] }; links.push(byPair[k]); }
-        byPair[k].houses.push(l.house);
+    }
+    draw();
+  }
+
+  /* Act 2. What a second link buys you — the part that makes the object worth learning.
+   * The learner walks a skyscraper one link at a time, from whichever end they like, and
+   * lands on "one of these two far ends is the digit". Then the closing panel: claim
+   * either end, and the same cells die. You never find out which end it was, and the
+   * elimination never depended on it. That is the argument the whole chain family runs on,
+   * and it is the one that reads as a shrug when it is written down. */
+  function chainAct(ui) {
+    var drill = D.makeDrill('skyscraper', 0);
+    if (!drill) { ui.info.innerHTML = '<p>No example available.</p>'; return; }
+    var f = drill.primary, d = f.digits[0], board = drill.board;
+    var path = [f.links[0].a, f.links[0].b, f.links[1].b, f.links[2].b];
+    var kinds = [f.links[0].kind, f.links[1].kind, f.links[2].kind];
+    var ends = [path[0], path[3]];
+    var victims = f.eliminations.map(function (e) { return e.cell; });
+
+    var from = null;      // the end we supposed empty
+    var step = 0;         // links walked so far
+    var claim = null;     // the end the learner then insisted on
+    var claimed = Object.create(null);   // ends claimed at least once, for the closing line
+
+    ui.picks(function (cell) {
+      if (from === null && ends.indexOf(cell) >= 0) { from = cell; step = 0; draw(); }
+    });
+
+    // The chain reads the same from either end. Walking it backwards is not a variation,
+    // it is the same deduction — and being able to do it is half of why neither end is
+    // special.
+    function walk() {
+      var backwards = from === path[3];
+      return {
+        cells: backwards ? path.slice().reverse() : path.slice(),
+        kinds: backwards ? kinds.slice().reverse() : kinds.slice()
+      };
+    }
+
+    function reason(o, i) {
+      var a = o.cells[i], b = o.cells[i + 1], strong = o.kinds[i] === 'strong';
+      var hn = S.houseName(S.HOUSE_META[linkHouse(board, a, b, d, strong)]);
+      if (strong) {
+        return 'In ' + hn + ' the ' + digTag(d) + ' has only ' + cellTag(a) + ' and ' +
+          cellTag(b) + ' to choose from, and ' + cellTag(a) + ' is out. So <b>' +
+          S.cellName(b) + ' is the ' + d + '</b>. <span class="muted">(strong link)</span>';
+      }
+      return cellTag(a) + ' and ' + cellTag(b) + ' are both in ' + hn + ', and ' +
+        cellTag(a) + ' is the ' + d + '. So <b>' + S.cellName(b) + ' is not</b>. ' +
+        '<span class="muted">(weak link)</span>';
+    }
+
+    function draw() {
+      clear(ui.controls);
+      var marks = [], cellClass = {}, arrows = [], html;
+
+      if (from === null) {
+        html = '<p>Two strong links, joined in the middle by a weak one. The two <b>far ' +
+          'ends</b> are ' + cellTag(ends[0]) + ' and ' + cellTag(ends[1]) + '.</p>' +
+          '<p><b>Tap either far end</b> to suppose it is <em>not</em> the ' + digTag(d) +
+          '.</p>' +
+          '<p class="muted">It genuinely does not matter which you pick. Try one, then ' +
+          'start over and try the other.</p>';
+      } else {
+        var o = walk();
+        for (var i = 0; i <= step; i++) {
+          var on = i % 2 === 1;
+          marks.push({ cell: o.cells[i], digit: d, kind: on ? 'true' : 'elim' });
+          if (on) cellClass[o.cells[i]] = 'trial';
+        }
+        var list = '';
+        for (var k = 0; k < step; k++) list += '<li>' + reason(o, k) + '</li>';
+
+        html = '<p>Suppose ' + cellTag(o.cells[0]) + ' is <em>not</em> the ' + digTag(d) +
+          '.</p>' + (list ? '<ol class="chain-steps">' + list + '</ol>' : '');
+
+        if (step < 3) {
+          ui.controls.appendChild(btn('Follow the next link', 'btn small primary', function () {
+            step++; draw();
+          }));
+        } else {
+          html += '<p class="verdict good">Supposing ' + cellTag(o.cells[0]) + ' had no ' +
+            d + ' forced ' + cellTag(o.cells[3]) + ' to be one. So <b>at least one of ' +
+            S.cellName(ends[0]) + ' and ' + S.cellName(ends[1]) + ' is the ' + d + '</b>.</p>';
+
+          if (claim === null) {
+            html += '<p>Which one? Nothing here can tell you — and that turns out not to ' +
+              'matter. Claim either:</p>';
+            ends.forEach(function (e) {
+              ui.controls.appendChild(btn('Say ' + S.cellName(e) + ' is the ' + d,
+                'btn small', function () { claim = e; draw(); }));
+            });
+          } else {
+            claimed[claim] = 1;
+            marks.length = 0; cellClass = {};
+            marks.push({ cell: claim, digit: d, kind: 'true' });
+            cellClass[claim] = 'trial';
+            victims.forEach(function (v) {
+              marks.push({ cell: v, digit: d, kind: 'elim' });
+              cellClass[v] = 'dead';
+              arrows.push({ a: claim, b: v, digit: d });
+            });
+            html += '<p class="verdict bad">If ' + cellTag(claim) + ' is the ' + d + ', then ' +
+              S.cellList(victims) + ' cannot be — each one shares a house with it.</p>';
+            if (ends.every(function (e) { return claimed[e]; })) {
+              html += '<p class="verdict good"><b>Same cells, either way.</b> You still do ' +
+                'not know which far end holds the ' + d + ', and you no longer need to: ' +
+                S.cellList(victims) + ' lose it whichever end it is. That is the ' +
+                'elimination — and that is what every chain in the rest of this course ' +
+                'is doing.</p>';
+            } else {
+              html += '<p class="muted">Now claim the other end and watch what changes.</p>';
+            }
+            ends.forEach(function (e) {
+              ui.controls.appendChild(btn('Say ' + S.cellName(e) + ' is the ' + d,
+                'btn small' + (e === claim ? ' active' : ''), function () { claim = e; draw(); }));
+            });
+          }
+        }
+        ui.controls.appendChild(btn('Start over', 'btn small ghost', function () {
+          from = null; step = 0; claim = null; draw();
+        }));
+      }
+
+      ui.info.innerHTML = html;
+      ui.bv.render({
+        board: board, givens: drill.givens, solo: d,
+        houses: f.houses.map(function (x) { return { house: x, kind: 'base' }; }),
+        links: f.links, arrows: arrows,
+        focus: path, keep: victims, dim: true,
+        marks: marks, cellClass: cellClass
       });
-      var cells = [];
-      links.forEach(function (l) { cells.push(l.a, l.b); });
-      info.innerHTML = '<p>The <b class="dig">' + digit + '</b> has <b>' + links.length +
-        '</b> strong ' + (links.length === 1 ? 'link' : 'links') + ' in this position.</p>' +
-        (links.length
-          ? '<ul class="link-list">' + links.map(function (l) {
-              return '<li>In ' + l.houses.map(function (h) {
-                  return S.houseName(S.HOUSE_META[h]); }).join(' and ') + ': only ' +
-                '<b class="rc">' + S.cellName(l.a) + '</b> or <b class="rc">' +
-                S.cellName(l.b) + '</b>. One of them <em>is</em> the ' + digit + '.</li>';
-            }).join('') + '</ul>'
-          : '<p>None — every house with this digit left has three or more places for it. ' +
-            'Try another digit.</p>') +
-        '<p class="muted">Two strong links that touch are a skyscraper or a kite. A whole ' +
-        'network of them is simple coloring. Long alternating runs are X-chains. It is ' +
-        'all this one object.</p>';
-      bv.render({
-        board: drill.board, givens: drill.givens, solo: digit,
-        links: links.map(function (l) { return { a: l.a, b: l.b, digit: digit, kind: 'strong' }; }),
-        focus: cells, dim: true
+    }
+
+    draw();
+  }
+
+  /* Act 3. Spotting them, which is the part nobody can do for you. A strong link has no
+   * shape to pattern-match — it is a count — so the only practice that helps is counting.
+   * Pick two cells; the widget works out which house you must have meant and tells you how
+   * many homes the digit really has there. Getting it wrong is the useful case: the miss
+   * lights up the homes you did not count. */
+  function findAct(ui) {
+    var drill = anyPosition('x-wing', 0);
+    if (!drill) return;
+    var board = drill.board;
+
+    var digits = [];
+    for (var dd = 1; dd <= 9; dd++) if (T.strongLinks(board, dd).length) digits.push(dd);
+    if (!digits.length) return;
+
+    var di = 0, picked = [], found = Object.create(null), message = '', spoil = [], revealed = false;
+
+    function digit() { return digits[di]; }
+    function links() { return allStrongLinks(board).filter(function (l) { return l.digit === digit(); }); }
+    function key(a, b) { return Math.min(a, b) + ':' + Math.max(a, b); }
+
+    ui.picks(function (cell) {
+      if (picked.length >= 2) picked = [];
+      if (picked.indexOf(cell) >= 0) return;
+      picked.push(cell);
+      message = ''; spoil = [];
+      if (picked.length === 2) judge();
+      draw();
+    });
+
+    function judge() {
+      var a = picked[0], b = picked[1], d = digit();
+      if (!board.has(a, d) || !board.has(b, d)) {
+        var bad = board.has(a, d) ? b : a;
+        message = '<p class="verdict bad">' + cellTag(bad) + ' cannot hold a ' + d + ' at ' +
+          'all, so it is not one of its homes. A strong link joins two <em>candidates</em>.</p>';
+        return;
+      }
+      var shared = S.housesOf[a].filter(function (x) { return S.housesOf[b].indexOf(x) >= 0; });
+      if (!shared.length) {
+        message = '<p class="verdict bad">' + cellTag(a) + ' and ' + cellTag(b) + ' share no ' +
+          'row, column or box. A strong link is a count taken inside one house — with no ' +
+          'house in common there is nothing to count.</p>';
+        return;
+      }
+      var hit = shared.filter(function (x) { return board.cellsFor(x, d).length === 2; })[0];
+      if (hit !== undefined) {
+        found[key(a, b)] = 1;
+        message = '<p class="verdict good">Yes. In ' + S.houseName(S.HOUSE_META[hit]) +
+          ' the ' + digTag(d) + ' has exactly these two homes, so at least one of them is ' +
+          'the ' + d + '.</p>';
+        return;
+      }
+      var counts = shared.map(function (x) {
+        var homes = board.cellsFor(x, d);
+        spoil = spoil.concat(homes);
+        return 'in ' + S.houseName(S.HOUSE_META[x]) + ' the ' + d + ' has <b>' + homes.length +
+          '</b> homes (' + S.cellList(homes) + ')';
+      });
+      message = '<p class="verdict bad">Not a strong link: ' + counts.join(', and ') +
+        '. Two is the number that welds a pair together — three or more and knocking one ' +
+        'out proves nothing.</p>';
+    }
+
+    ui.controls.appendChild(btn('Another digit', 'btn small', function () {
+      di = (di + 1) % digits.length; picked = []; message = ''; spoil = []; revealed = false;
+      found = Object.create(null);
+      draw();
+    }));
+    ui.controls.appendChild(btn('Show me all of them', 'btn small ghost', function () {
+      revealed = !revealed; draw();
+    }));
+    // The other two acts colour the cells they are talking about. This one does not — the
+    // whole exercise is finding marks nobody has pointed at — so the emphasis control
+    // earns its place here in a way it would not there.
+    emphasisButton(ui.controls);
+
+    function draw() {
+      var d = digit(), ls = links();
+      var got = ls.filter(function (l) { return found[key(l.a, l.b)]; }).length;
+      var cellClass = {}, marks = [], focus = [];
+
+      picked.forEach(function (c) { cellClass[c] = 'pick'; focus.push(c); });
+      spoil.forEach(function (c) { marks.push({ cell: c, digit: d, kind: 'pattern' }); });
+      ls.forEach(function (l) {
+        if (!found[key(l.a, l.b)]) return;
+        marks.push({ cell: l.a, digit: d, kind: 'true' });
+        marks.push({ cell: l.b, digit: d, kind: 'true' });
+      });
+
+      ui.info.innerHTML =
+        '<p>Only the ' + digTag(d) + ' is showing. Somewhere on this grid a house is down ' +
+        'to <b>two</b> homes for it. <b>Tap the two cells</b> you think are the pair.</p>' +
+        message +
+        '<p class="hint-text">Found ' + got + ' of the ' + ls.length + ' strong ' +
+        (ls.length === 1 ? 'link' : 'links') + ' on the ' + d + '.</p>';
+
+      ui.bv.render({
+        board: board, givens: drill.givens, solo: d,
+        marks: marks, cellClass: cellClass,
+        links: (revealed ? ls : ls.filter(function (l) { return found[key(l.a, l.b)]; }))
+          .map(function (l) { return { a: l.a, b: l.b, digit: d, kind: 'strong' }; })
       });
     }
     draw();

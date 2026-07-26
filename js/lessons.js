@@ -857,11 +857,30 @@
       id: 'strong-links', group: 'links', title: 'Strong links: the atom',
       custom: 'strong-links',
       tagline: 'Learn this one object and a dozen named techniques collapse into one idea.',
-      intro: '<p>Everything from here on is built from one object.</p>' +
-        '<p class="callout"><b>Strong link:</b> a digit with exactly two homes in a house — ' +
-        '<em>at least one is true</em>. <b>Weak link:</b> two cells sharing a house — ' +
-        '<em>at most one is true</em>. Chains alternate the two. That is the whole theory.</p>' +
-        '<p>Pick a digit and see every strong link it has.</p>'
+      // The definition used to sit here, above the widget. It is now below it: three acts
+      // of clicking teach the thing, and the words are only worth reading once you have
+      // already felt what they describe.
+      intro: '<p>Everything from here on is built from one object. Rather than describe it, ' +
+        'here it is to push on.</p>',
+      rule: '<p><b>Strong link:</b> a digit with exactly two homes in a house — ' +
+        '<em>at least one of them is true</em>, so knocking one out proves the other. ' +
+        '<b>Weak link:</b> two cells sharing a house — <em>at most one is true</em>, so ' +
+        'proving one kills the other.</p>' +
+        '<p>A chain alternates them: <em>off</em> travels down a strong link and comes out ' +
+        '<em>on</em>; <em>on</em> travels down a weak link and comes out <em>off</em>. Start ' +
+        'and end on a strong link, and the two ends give you an elimination — without ever ' +
+        'settling which end was the digit.</p>' +
+        '<p class="muted">Two strong links that touch are a skyscraper or a kite. A whole ' +
+        'network of them is simple coloring. Long alternating runs are X-chains. Every one ' +
+        'of those is this page, repeated.</p>',
+      mistakes: [
+        'Reading a strong link off the <em>cells</em>. It is a property of a digit ' +
+          'inside a house: count that digit\'s homes there, and see if the count is two.',
+        'Trying to work out which end is the digit. Act 2 is the answer to that — you ' +
+          'cannot, and the elimination does not depend on it.',
+        'Forgetting that a pair with exactly two homes is <em>also</em> a weak link. Both ' +
+          'ends can never be on either, which is why chains can enter and leave one.'
+      ]
     },
     {
       id: 'x-wing', group: 'fish', title: 'X-Wing', se: 'SE 3.2',
