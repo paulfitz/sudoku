@@ -919,6 +919,48 @@ carrying a fact is.
 site sources for British spellings and fails the build. A one-off pass cannot hold a
 convention; a check can. Verified by introducing `colour` and watching it fail.
 
+### Part R — A glossary that does not interrupt
+
+Several words on this site are jargon no page stops to define, and one of them is not even
+standard sudoku usage: **home**, meaning "a cell where a digit can still go", is this
+site's own shorthand. "SE 3.2" sat on twenty lesson headers explaining nothing. The two
+obvious fixes are both bad — a definitions page costs the reader their place, and a
+parenthetical at every use buries the prose.
+
+So: a dotted underline, a small panel on tap, hover or focus, and a link to the lesson for
+anyone who wants the long version. 24 terms in `site/js/glossary.js`.
+
+**Found by scanning, not by markup.** Most of the prose here is generated at runtime from
+findings, so hand-marked spans would have covered the static pages and silently missed
+every walkthrough frame. A `MutationObserver` on `#main` annotates whatever gets rendered,
+which also means a widget built next month gets the feature without knowing it exists.
+
+Three rules keep it discreet, and each has a test because each is invisible when wrong:
+
+- **One marker per term per block** (paragraph, bullet, panel). Without this the rule card
+  becomes a field of dotted underlines.
+- **A page never glosses its own subject.** The strong-links page marking "strong link"
+  would offer a reader a link to the page they are on.
+- **Hyphenated compounds are left alone.** `\b` treats a hyphen as a word boundary, so
+  "X-chains" was getting "chains" underlined, and "XY-Wing" would have had "Wing".
+
+Three bugs, all caught by tests rather than by looking:
+
+- `[hidden]` loses to any `display` rule in the stylesheet. Every panel on the page was
+  open at once — obvious in a screenshot, invisible in the DOM, since `hidden` was set
+  correctly. Now driven by an `.open` class, and asserted on computed style.
+- `marked()` reads the DOM, but nothing is in the DOM until the text node is rewritten, so
+  two hits inside one text node both looked unmarked. "elimination" appeared twice in one
+  bullet.
+- **Escape could not dismiss the panel at all.** Escape closes it and restores focus to the
+  term; focus is also what opens a panel for keyboard users; so the restore instantly
+  re-opened what Escape had just closed. Caught by the naive-user suite, which is the only
+  one that presses Escape.
+
+Also: `window.innerWidth` returns 421 on a 390-wide emulated viewport, so the
+keep-it-on-screen clamp was clamping to an edge that was not there and panels opened into
+the gutter. `document.documentElement.clientWidth` is the right measure.
+
 ### Not built
 
 Jellyfish and naked quads are detected and will appear in the playground's hints, but have

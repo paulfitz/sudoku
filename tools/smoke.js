@@ -9,7 +9,7 @@
  */
 'use strict';
 
-var CHECKS = ['walkthroughs', 'whatif', 'drills', 'hints', 'widgets', 'pages', 'a11y'];
+var CHECKS = ['walkthroughs', 'whatif', 'drills', 'hints', 'widgets', 'pages', 'glossary', 'a11y'];
 
 module.exports = async function (page) {
   for (var i = 0; i < CHECKS.length; i++) {

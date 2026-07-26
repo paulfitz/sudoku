@@ -7,7 +7,8 @@
   'use strict';
 
   var S = window.Sudoku, T = window.Techniques, L = window.Lessons,
-      D = window.Drills, H = window.Hypothesis, BoardView = window.BoardView;
+      D = window.Drills, H = window.Hypothesis, BoardView = window.BoardView,
+      G = window.Glossary;
 
   // ------------------------------------------------------------------ dom
 
@@ -154,8 +155,14 @@
   function lessonPage(lesson, startStep) {
     var page = h('article', 'page');
     var head = add(page, h('header', 'page-head'));
-    add(head, h('div', 'eyebrow', groupTitle(lesson.group) +
-      (lesson.se ? ' <span class="se">' + lesson.se + '</span>' : '')));
+    var eyebrow = add(head, h('div', 'eyebrow', groupTitle(lesson.group)));
+    // "SE 3.2" appears on twenty pages and is explained on none of them. The scanner skips
+    // the eyebrow (it would mark the group name too), so this badge is wired up by hand.
+    if (lesson.se) {
+      eyebrow.appendChild(document.createTextNode(' '));
+      var seTag = add(eyebrow, h('span', 'se'));
+      seTag.appendChild(G.trigger(lesson.se, G.byId('se')));
+    }
     add(head, h('h1', null, lesson.title));
     if (lesson.tagline) add(head, h('p', 'tagline', lesson.tagline));
 
@@ -2634,5 +2641,14 @@
       if (e.target.tagName === 'A') document.body.classList.remove('nav-open');
     });
     route();
+
+    // Glossary last: it watches #main for added nodes, so it wants the first page already
+    // in place. It needs the lesson titles to label its "read the lesson" links, which
+    // keeps the lesson names in one file rather than duplicated into the term list.
+    if (G) {
+      var titles = {};
+      L.LESSONS.forEach(function (l) { titles[l.id] = l.title; });
+      G.install(mainEl, titles);
+    }
   });
 })();

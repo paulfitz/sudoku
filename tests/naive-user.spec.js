@@ -609,3 +609,117 @@ test.describe('strong links are operated, not read', () => {
         .toMatch(/two/i);
     });
 });
+
+test.describe('unfamiliar words explain themselves', () => {
+  /* "home" is this site's own coinage for "a cell where a digit can still go" and no
+   * page defines it. The markers are meant to be usable by someone who does not know
+   * they are markers, on a phone, and without a mouse — which is where hover tooltips
+   * normally fail. Nothing below touches window.Glossary. */
+
+  test('tapping an underlined word explains it and offers the lesson', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/strong-links');
+
+    // Find an underlined term the way a reader would: something in the prose that is
+    // marked out from the text around it.
+    const terms = page.locator('.page .gloss');
+    expect(await terms.count(), 'no term is marked as explainable').toBeGreaterThan(2);
+
+    // Nothing should be showing until asked.
+    await expect(page.locator('.gloss-pop:visible')).toHaveCount(0);
+
+    const first = terms.first();
+    const word = (await first.innerText()).trim();
+    await first.click();
+
+    const pop = page.locator('.gloss-wrap.open .gloss-pop');
+    await expect(pop).toBeVisible();
+    const text = await pop.innerText();
+    expect(text.length, `the panel for "${word}" is empty`).toBeGreaterThan(30);
+    // It must define the word, not merely repeat it.
+    expect(text.replace(/\s+/g, ' ')).toMatch(/[a-z]{3,}\s+[a-z]{3,}\s+[a-z]{3,}/i);
+
+    // Reading on must be possible without hunting for the close control.
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.gloss-pop:visible')).toHaveCount(0);
+
+    // And tapping elsewhere on the page dismisses it too.
+    await first.click();
+    await expect(page.locator('.gloss-wrap.open .gloss-pop')).toBeVisible();
+    await page.locator('h1').click();
+    await expect(page.locator('.gloss-pop:visible')).toHaveCount(0);
+  });
+
+  test('a marked term is reachable and openable from the keyboard', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/strong-links');
+    const first = page.locator('.page .gloss').first();
+
+    await first.focus();
+    await expect(first).toBeFocused();
+    // Focus alone should reveal it — a keyboard user gets no hover.
+    await expect(page.locator('.gloss-wrap.open .gloss-pop')).toBeVisible();
+    await expect(first).toHaveAttribute('aria-expanded', 'true');
+
+    // Tabbing forward must land on the lesson link inside the panel, not skip past it.
+    await page.keyboard.press('Tab');
+    const focused = await page.evaluate(() => {
+      const a = document.activeElement;
+      return { tag: a.tagName, href: a.getAttribute('href'), inPop: !!a.closest('.gloss-pop') };
+    });
+    if (focused.inPop) {
+      expect(focused.tag).toBe('A');
+      expect(focused.href).toMatch(/^#\/lesson\//);
+      await expect(page.locator('.gloss-wrap.open .gloss-pop'),
+        'the panel closed while the reader was tabbing into it').toBeVisible();
+    }
+  });
+
+  test('the panel stays on screen at the right edge of a phone', async ({ page }, testInfo) => {
+    await page.goto(SITE + '#/lesson/hidden-single');
+    const terms = await page.locator('.page .gloss').all();
+    expect(terms.length).toBeGreaterThan(0);
+
+    const width = page.viewportSize().width;
+    for (const t of terms) {
+      await t.click();
+      const pop = page.locator('.gloss-wrap.open .gloss-pop');
+      if (!(await pop.count())) continue;
+      const box = await pop.boundingBox();
+      if (!box) continue;
+      const word = (await t.innerText()).trim();
+      expect(box.x, `"${word}" opens off the left edge`).toBeGreaterThanOrEqual(-1);
+      expect(box.x + box.width,
+        `"${word}" opens past the right edge (${Math.round(box.x + box.width)} > ${width})`)
+        .toBeLessThanOrEqual(width + 1);
+      await page.keyboard.press('Escape');
+    }
+  });
+
+  test('markers do not swamp the prose', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/strong-links');
+    // At most one marker per term per paragraph or bullet. Anything more and the page
+    // reads as a field of dotted underlines rather than prose with a few footnotes.
+    const worst = await page.evaluate(() => {
+      let worst = 0;
+      document.querySelectorAll('p, li, .tagline').forEach((b) => {
+        const seen = {};
+        b.querySelectorAll('.gloss').forEach((g) => {
+          seen[g.dataset.term] = (seen[g.dataset.term] || 0) + 1;
+          worst = Math.max(worst, seen[g.dataset.term]);
+        });
+      });
+      return worst;
+    });
+    expect(worst, 'a term is marked more than once inside one block').toBeLessThanOrEqual(1);
+
+    // A marker must not look like a link — it is a footnote, and should not compete.
+    const styled = await page.evaluate(() => {
+      const g = document.querySelector('.gloss');
+      const p = g.closest('p, li, .tagline');
+      const cs = getComputedStyle(g), ps = getComputedStyle(p);
+      return { term: cs.color, prose: ps.color, weight: cs.fontWeight, pw: ps.fontWeight };
+    });
+    expect(styled.term, 'markers are colored differently from the text they sit in')
+      .toBe(styled.prose);
+    expect(styled.weight).toBe(styled.pw);
+  });
+});
