@@ -1,0 +1,453 @@
+/* naive-user.spec.js — tests that play like someone who does not know the answer.
+ *
+ * The existing smoke suite passed while the naked-singles drill was broken, and it is
+ * worth being precise about why: it cheated. It called
+ *
+ *     window.Drills.makeDrill('naked-single', 1).primary
+ *
+ * to get the correct cells and digits, then clicked exactly those. A test with inside
+ * knowledge can only ever prove the checker accepts the answer it was handed. It cannot
+ * notice that a step is invisible, that a prompt does not say what to do next, or that a
+ * reasonable action produces a baffling response.
+ *
+ * So these tests may not touch window.Sudoku, window.Drills or any other internal. They
+ * read the screen — visible text, ARIA roles, which pencil marks are actually rendered —
+ * decide what a person would do, do it, and assert on what a person would then see.
+ *
+ *   npx playwright test
+ */
+const { test, expect } = require('@playwright/test');
+const path = require('path');
+
+const SITE = 'file://' + path.join(__dirname, '..', 'site', 'index.html');
+
+/** Everything a person can see in one cell: its big digit, or its pencil marks. */
+async function readCell(cell) {
+  const value = (await cell.locator('.value').innerText()).trim();
+  if (value) return { value, marks: [] };
+  const marks = await cell.locator('.cand:not(.off)').allInnerTexts();
+  return { value: null, marks: marks.map((m) => m.trim()) };
+}
+
+/** Scan the visible grid for a cell showing exactly one pencil mark. */
+async function findLoneCandidate(grid) {
+  const cells = await grid.locator('.cell').all();
+  for (let i = 0; i < cells.length; i++) {
+    const marks = await cells[i].locator('.cand:not(.off)').allInnerTexts();
+    if (marks.length === 1) return { cell: cells[i], digit: marks[0].trim(), index: i };
+  }
+  return null;
+}
+
+test.describe('a learner who does not know the answer', () => {
+  test('naked singles: find the cell, say the digit, be told you are right', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/naked-single');
+
+    const drill = page.locator('.drill');
+    await expect(drill).toBeVisible();
+
+    // The prompt must say what to look for AND what to do once found. "I didn't know
+    // what to do next" is a test failure, not a user error.
+    const prompt = drill.locator('.prompt');
+    await expect(prompt).toContainText(/find/i);
+    await expect(prompt).toContainText(/check/i,
+      { message: 'the prompt never tells the learner how to submit' });
+
+    // Look at the grid and find a cell with one pencil mark — as a person would.
+    const found = await findLoneCandidate(drill.locator('.board-grid'));
+    expect(found, 'the practice grid should contain a visible naked single').not.toBeNull();
+
+    await found.cell.click();
+    await drill.getByRole('button', { name: 'Check' }).click();
+    await expect(drill.locator('.prompt')).toContainText(/that is the pattern/i);
+
+    // Now it wants a digit. Whatever it asks for must be answerable from what is shown:
+    // the prompt should name the cell, so there is no guessing about where.
+    await expect(prompt).toContainText(/digit/i);
+
+    // Answer with the digit that was visibly the only candidate.
+    await drill.locator('.digit-pad').getByRole('button', { name: `Digit ${found.digit}` }).click();
+    await drill.getByRole('button', { name: 'Check' }).click();
+
+    await expect(drill.locator('.feedback')).toContainText(/correct/i,
+      { message: 'the only possible digit was rejected' });
+  });
+
+  test('naked singles: choosing the digit and also tapping the cell still counts', async ({ page }) => {
+    // A learner who picks the digit and then taps the cell — the obvious reading of a
+    // "pick a digit, then tap cells" pad — must not silently cancel their own answer.
+    await page.goto(SITE + '#/lesson/naked-single');
+    const drill = page.locator('.drill');
+
+    const found = await findLoneCandidate(drill.locator('.board-grid'));
+    await found.cell.click();
+    await drill.getByRole('button', { name: 'Check' }).click();
+
+    await drill.locator('.digit-pad').getByRole('button', { name: `Digit ${found.digit}` }).click();
+    await found.cell.click();                       // the extra, natural tap
+    await drill.getByRole('button', { name: 'Check' }).click();
+
+    await expect(drill.locator('.feedback')).toContainText(/correct/i,
+      { message: 'tapping the cell after choosing the digit cancelled the answer' });
+  });
+
+  test('hidden singles: the same flow works without inside knowledge', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/hidden-single');
+    const drill = page.locator('.drill');
+
+    // A learner cannot scan for hidden singles by eye here, so use the hints — which is
+    // exactly the path a stuck person takes. The hints must be enough to finish.
+    await drill.getByRole('button', { name: 'Hint' }).click();
+    const hint1 = await drill.locator('.feedback').innerText();
+    expect(hint1).toMatch(/it is about the \d/i);
+
+    await drill.getByRole('button', { name: 'Hint' }).click();
+    await drill.getByRole('button', { name: 'Hint' }).click();
+    const hint3 = await drill.locator('.feedback').innerText();
+    const named = hint3.match(/r(\d)c(\d)/);
+    expect(named, 'the last hint should name a cell').not.toBeNull();
+
+    const idx = (Number(named[1]) - 1) * 9 + (Number(named[2]) - 1);
+    await drill.locator('.board-grid .cell').nth(idx).click();
+    await drill.getByRole('button', { name: 'Check' }).click();
+    await expect(drill.locator('.prompt')).toContainText(/that is the pattern/i);
+
+    // The prompt now names a cell; read that cell's marks off the screen and answer.
+    const promptText = await drill.locator('.prompt').innerText();
+    const target = promptText.match(/r(\d)c(\d)/);
+    expect(target, 'the prompt should say which cell needs a digit').not.toBeNull();
+
+    // A hidden single's cell still shows several marks, so the learner must reason:
+    // the hint told them the digit. Use that.
+    const digit = hint1.match(/(\d)/)[1];
+    await drill.locator('.digit-pad').getByRole('button', { name: `Digit ${digit}` }).click();
+    await drill.getByRole('button', { name: 'Check' }).click();
+    await expect(drill.locator('.feedback')).toContainText(/correct/i);
+  });
+
+  test('every drill states both what to find and how to submit', async ({ page }) => {
+    await page.goto(SITE + '#/');
+    const ids = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.sidebar a[href^="#/lesson/"]'))
+        .map((a) => a.getAttribute('href')));
+
+    const problems = [];
+    for (const href of ids) {
+      await page.goto(SITE + href);
+      const drill = page.locator('.drill');
+      if (!(await drill.count())) continue;               // concept pages have no drill
+      const prompt = (await drill.locator('.prompt').innerText()).trim();
+      if (!/check/i.test(prompt)) problems.push(`${href}: prompt never mentions Check — "${prompt}"`);
+      if (!/find/i.test(prompt)) problems.push(`${href}: prompt does not say what to find`);
+      if (/undefined|NaN|\[object/.test(prompt)) problems.push(`${href}: broken prompt "${prompt}"`);
+    }
+    expect(problems, problems.join('\n')).toEqual([]);
+  });
+
+  test('a wrong answer explains itself instead of just saying no', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/x-wing');
+    const drill = page.locator('.drill');
+
+    // Pick two arbitrary cells — a plausible wrong guess.
+    await drill.locator('.board-grid .cell').nth(0).click();
+    await drill.locator('.board-grid .cell').nth(40).click();
+    await drill.getByRole('button', { name: 'Check' }).click();
+
+    const feedback = (await drill.locator('.feedback').innerText()).trim();
+    expect(feedback.length, 'a wrong answer produced no feedback at all').toBeGreaterThan(15);
+    expect(feedback).not.toMatch(/^(no|wrong|incorrect)\.?$/i);
+  });
+
+  test('being stuck has a way out that teaches', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/skyscraper');
+    const drill = page.locator('.drill');
+
+    await drill.getByRole('button', { name: 'Show me' }).click();
+    // It must be a walkthrough, not a bare answer.
+    await expect(drill.locator('.step-text')).toBeVisible();
+    const steps = await drill.locator('.dot').count();
+    expect(steps, 'Show me should walk through the reasoning').toBeGreaterThan(2);
+
+    const first = await drill.locator('.step-text').innerText();
+    await drill.getByRole('button', { name: 'Next' }).click();
+    const second = await drill.locator('.step-text').innerText();
+    expect(second).not.toEqual(first);
+
+    await expect(drill.getByRole('button', { name: /try another grid/i })).toBeVisible();
+  });
+});
+
+test.describe('the scanning trainer teaches by doing', () => {
+  test('picking a digit cross-hatches the grid and reports what it found', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/hidden-single');
+    const hunt = page.locator('.card.hunt');
+    await expect(hunt).toBeVisible();
+
+    // The strip must show how many of each digit are placed — that is the whole heuristic.
+    const counts = await hunt.locator('.digit-strip .count').allInnerTexts();
+    expect(counts).toHaveLength(9);
+    expect(counts.every((c) => /\d+ placed/.test(c))).toBe(true);
+
+    // Scan every digit as a learner would, and check the cross-hatch actually draws.
+    let paid = 0;
+    for (let d = 1; d <= 9; d++) {
+      await hunt.locator('.digit-strip').getByRole('button', { name: new RegExp(`Scan the ${d}s`) }).click();
+      const strikes = await page.locator('.card.hunt .strike').count();
+      expect(strikes, `scanning ${d} drew no strike lines`).toBeGreaterThan(0);
+      const report = await hunt.locator('.step-text').innerText();
+      expect(report).toMatch(/Yes\.|Nothing forced/);
+      if (/Yes\./.test(report)) {
+        paid++;
+        // a forced cell must be singled out, not lost among the survivors
+        expect(await page.locator('.card.hunt .tint-forced').count()).toBeGreaterThan(0);
+      }
+    }
+    expect(paid, 'no digit in this position yielded a hidden single').toBeGreaterThan(0);
+
+    // The tally is what makes the heuristic self-evident rather than asserted.
+    const tally = await hunt.locator('.tally').innerText();
+    expect(tally).toMatch(/9 digits scanned/);
+    expect(tally).toMatch(/averaged/);
+  });
+});
+
+test.describe('search procedures are run, not described', () => {
+  test('X-Wing: the scanner performs the two-move search', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/x-wing');
+    const hunt = page.locator('.card.hunt');
+
+    // Move one: which digits even have two lines with exactly two homes?
+    const counts = await hunt.locator('.digit-strip .count').allInnerTexts();
+    expect(counts).toHaveLength(9);
+    const viable = counts.findIndex((c) => parseInt(c, 10) >= 2);
+    expect(viable, 'no digit in this position has two candidate lines').toBeGreaterThanOrEqual(0);
+
+    await hunt.locator('.digit-strip button').nth(viable).click();
+
+    // Move two: the two-home lines are listed and comparable.
+    const lines = hunt.locator('.scan-row .btn.scan-pick');
+    expect(await lines.count(), 'no two-home lines listed').toBeGreaterThanOrEqual(2);
+    await lines.nth(0).click();
+    await lines.nth(1).click();
+
+    // Whatever the verdict, it must state the column pairs it compared — that is the lesson.
+    const verdict = await hunt.locator('.step-text').innerText();
+    expect(verdict).toMatch(/X-Wing|No fish/i);
+    expect(verdict).toMatch(/\d\s*&\s*\d|columns? \d/i);
+  });
+
+  test('colouring: you paint the network yourself and it explains each step', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/coloring');
+    const hunt = page.locator('.card.hunt');
+    const cells = hunt.locator('.board-grid .cell');
+
+    // Start anywhere in a network, then keep clicking until it completes.
+    let started = false;
+    for (let i = 0; i < 81 && !started; i++) {
+      await cells.nth(i).click();
+      started = /Started at/.test(await hunt.locator('.step-text').innerText());
+    }
+    expect(started, 'no cell could start a network').toBe(true);
+
+    for (let pass = 0; pass < 8; pass++) {
+      if (/Network complete/.test(await hunt.locator('.step-text').innerText())) break;
+      for (let i = 0; i < 81; i++) {
+        await cells.nth(i).click();
+        if (/Network complete/.test(await hunt.locator('.step-text').innerText())) break;
+      }
+    }
+
+    const finalText = await hunt.locator('.step-text').innerText();
+    expect(finalText, 'painting never completed the network').toMatch(/Network complete/);
+    // and it must reach a conclusion, not just stop
+    expect(finalText).toMatch(/sees\s+both|contradicted itself|pays nothing/i);
+  });
+});
+
+test.describe('a right answer to the wrong question is not just "wrong"', () => {
+  test('an inert naked pair is recognised and explained', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/naked-pairs');
+    const drill = page.locator('.drill');
+
+    // Find, by eye, a row with exactly two empty cells holding the same two marks.
+    // That is a real naked pair that can eliminate nothing — and it is the most likely
+    // thing a learner picks first, because there are several on any grid.
+    const findInert = () => drill.locator('.board-grid').evaluate((g) => {
+      const cells = [...g.querySelectorAll('.cell')];
+      const marksOf = (c) => [...c.querySelectorAll('.cand:not(.off)')].map((m) => m.textContent).join('');
+      const empty = (c) => !c.querySelector('.value').textContent.trim();
+      const rowOf = (i) => Math.floor(i / 9), colOf = (i) => i % 9;
+      const boxOf = (i) => Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
+
+      // A pair is only inert if it is inert in EVERY house the two cells share — being
+      // the last two in a row says nothing if their box still has cells to clean.
+      const houseCells = {
+        row: (i) => cells.filter((_, j) => rowOf(j) === rowOf(i)),
+        col: (i) => cells.filter((_, j) => colOf(j) === colOf(i)),
+        box: (i) => cells.filter((_, j) => boxOf(j) === boxOf(i))
+      };
+      for (let i = 0; i < 81; i++) {
+        if (!empty(cells[i]) || marksOf(cells[i]).length !== 2) continue;
+        for (let j = i + 1; j < 81; j++) {
+          if (!empty(cells[j]) || marksOf(cells[j]) !== marksOf(cells[i])) continue;
+          const shared = ['row', 'col', 'box'].filter((k) =>
+            houseCells[k](i).includes(cells[j]));
+          if (!shared.length) continue;
+          const allInert = shared.every((k) => houseCells[k](i).filter(empty).length === 2);
+          if (allInert) return [i, j];
+        }
+      }
+      return null;
+    });
+
+    // Inert pairs are common but not on every grid, so walk a few rather than skipping —
+    // a skipped test is a silent hole exactly where a learner tripped.
+    let pair = await findInert();
+    for (let tries = 0; tries < 8 && !pair; tries++) {
+      await drill.getByRole('button', { name: 'New grid' }).click();
+      pair = await findInert();
+    }
+    expect(pair, 'no inert pair found on any of 9 practice grids').not.toBeNull();
+
+    for (const idx of pair) await drill.locator(`.cell[data-cell="${idx}"]`).click();
+    await drill.getByRole('button', { name: 'Check' }).click();
+
+    const msg = await drill.locator('.feedback').innerText();
+    expect(msg, 'a genuine pair was denied outright').not.toMatch(/None of those cells are part of a pattern/i);
+    expect(msg).toMatch(/genuine naked pair/i);
+    expect(msg).toMatch(/remove|clear|eliminat/i);
+  });
+});
+
+test.describe('the grid is actually legible', () => {
+  test('cells are uniform and pencil marks fit inside them', async ({ page }) => {
+    // Both of these broke at once when the candidate font grew and the accessibility row
+    // wrappers arrived: `1fr` is `minmax(auto,1fr)`, so a cell whose marks overflowed
+    // stretched its row and starved the others. One row rendered 14px tall.
+    for (const id of ['naked-single', 'naked-pairs', 'x-wing', 'pointing']) {
+      await page.goto(SITE + '#/lesson/' + id);
+      const grids = await page.locator('.board-grid').all();
+      for (const [gi, grid] of grids.entries()) {
+        const stats = await grid.evaluate((g) => {
+          const cells = [...g.querySelectorAll('.cell')];
+          const heights = cells.map((c) => Math.round(c.getBoundingClientRect().height));
+          const clipped = cells.filter((c) => {
+            const cb = c.getBoundingClientRect();
+            const cd = c.querySelector('.cands').getBoundingClientRect();
+            return cd.height > cb.height + 0.5 || cd.bottom > cb.bottom + 0.5;
+          }).length;
+          return { min: Math.min(...heights), max: Math.max(...heights), clipped };
+        });
+        expect(stats.max - stats.min,
+          `${id} grid ${gi}: row heights range ${stats.min}-${stats.max}px`).toBeLessThanOrEqual(1);
+        expect(stats.clipped,
+          `${id} grid ${gi}: ${stats.clipped} cells have pencil marks spilling outside the cell`).toBe(0);
+      }
+    }
+  });
+});
+
+test.describe('the walkthrough earns its steps', () => {
+  test('no step repeats the previous picture', async ({ page }) => {
+    // Pressing Next and getting the same image is what "clunky" meant: the reader pays a
+    // click and receives only prose.
+    const ids = ['naked-single', 'hidden-single', 'naked-pairs', 'pointing', 'x-wing',
+                 'skyscraper', 'kite', 'coloring', 'x-chain', 'xy-wing', 'w-wing'];
+    const problems = [];
+    for (const id of ids) {
+      await page.goto(SITE + '#/lesson/' + id);
+      const n = await page.locator('.narrative .dot').count();
+      let prev = null;
+      for (let i = 0; i < n; i++) {
+        if (i) await page.locator('.narrative .step-nav .btn:not(.ghost)').first().click();
+        const sig = await page.evaluate(() => {
+          const g = document.querySelectorAll('.board-grid')[0];
+          return [...g.querySelectorAll('.cell')].map((c) =>
+            c.className + '|' + [...c.querySelectorAll('.cand')].map((x) => x.className).join(',')
+          ).join(';') + '##' + document.querySelectorAll('.board-overlay line').length;
+        });
+        if (sig === prev) problems.push(`${id}: step ${i + 1} shows an identical picture`);
+        prev = sig;
+      }
+    }
+    expect(problems, problems.join('\n')).toEqual([]);
+  });
+
+  test('arrow keys step the walkthrough, and the end points at the drill', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/x-wing');
+    // scoped to the walkthrough: hunt widgets have their own .narrative on this page now
+    const walkthrough = page.locator('.page > .stage');
+    const readStep = () => walkthrough.locator('.step-text').innerText();
+
+    const first = await readStep();
+    await page.keyboard.press('ArrowRight');
+    expect(await readStep(), 'ArrowRight should advance the walkthrough').not.toEqual(first);
+    await page.keyboard.press('ArrowLeft');
+    expect(await readStep()).toEqual(first);
+
+    const total = await walkthrough.locator('.dot').count();
+    for (let i = 1; i < total; i++) await page.keyboard.press('ArrowRight');
+    await expect(walkthrough.getByRole('button', { name: /now you try/i })).toBeVisible();
+  });
+});
+
+test.describe('reachable without a mouse', () => {
+  test('a drill can be completed entirely from the keyboard', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/naked-single');
+    const drill = page.locator('.drill');
+    const grid = drill.locator('.board-grid');
+
+    const found = await findLoneCandidate(grid);
+    expect(found).not.toBeNull();
+
+    // Walk to the target cell with arrow keys only.
+    await grid.locator('.cell').first().focus();
+    const targetRow = Math.floor(found.index / 9);
+    const targetCol = found.index % 9;
+    for (let r = 0; r < targetRow; r++) await page.keyboard.press('ArrowDown');
+    for (let c = 0; c < targetCol; c++) await page.keyboard.press('ArrowRight');
+
+    const focused = await page.evaluate(() => document.activeElement.getAttribute('aria-label'));
+    expect(focused, 'arrow keys should land on the target cell')
+      .toMatch(new RegExp(`r${targetRow + 1}c${targetCol + 1}`));
+
+    await page.keyboard.press('Enter');
+    await drill.getByRole('button', { name: 'Check' }).click();
+    await expect(drill.locator('.prompt')).toContainText(/that is the pattern/i);
+  });
+
+  test('the grid exposes itself properly to assistive technology', async ({ page }) => {
+    await page.goto(SITE + '#/lesson/x-wing');
+    const grid = page.locator('.board-grid').first();
+
+    await expect(grid).toHaveAttribute('role', 'grid');
+    expect(await grid.getByRole('row').count()).toBe(9);
+    expect(await grid.getByRole('gridcell').count()).toBe(81);
+
+    // Labels must describe content, not just position.
+    const labels = await grid.getByRole('gridcell').evaluateAll((els) =>
+      els.map((e) => e.getAttribute('aria-label')));
+    expect(labels.every((l) => l && /^r\dc\d/.test(l))).toBe(true);
+    expect(labels.some((l) => /candidates/.test(l))).toBe(true);
+  });
+});
+
+test.describe('nothing dead-ends', () => {
+  test('every lesson in the sidebar renders something usable', async ({ page }) => {
+    await page.goto(SITE + '#/');
+    const hrefs = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.sidebar a[href^="#/"]'))
+        .map((a) => a.getAttribute('href')));
+
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+
+    for (const href of hrefs) {
+      await page.goto(SITE + href);
+      await expect(page.locator('h1')).toBeVisible();
+      const heading = (await page.locator('h1').innerText()).trim();
+      expect(heading.length, `${href} has an empty heading`).toBeGreaterThan(2);
+    }
+    expect(errors, errors.join('\n')).toEqual([]);
+  });
+});

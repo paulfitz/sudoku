@@ -1,0 +1,561 @@
+/* style.css
+ *
+ * The color semantics here are load-bearing, not decorative. Plan principle C4 says a
+ * learner should only have to learn the picture once, so:
+ *
+ *   amber tint      the pattern under discussion
+ *   red + strike    a candidate this deduction kills
+ *   green           a candidate this deduction confirms
+ *   blue / violet   the two sides of a case split, or the two colors in coloring
+ *   blue wash       a "base" house (where the constraint comes from)
+ *   violet wash     a "cover" house (where the elimination lands)
+ *   solid line      strong link — at least one end is true
+ *   dashed line     weak link — at most one end is true
+ *
+ * Those meanings never change between lessons.
+ */
+
+:root {
+  --bg: #fbfaf8;
+  --panel: #ffffff;
+  --ink: #1d2229;
+  --ink-soft: #5a6472;
+  --ink-faint: #8b95a3;
+  --rule: #e2e0db;
+  --rule-strong: #2b3038;
+
+  --accent: #2c6fbb;
+  --accent-soft: #e8f0fa;
+
+  --pattern: #f0a202;
+  --pattern-bg: #fdf3dc;
+  --elim: #cf3b32;
+  --elim-bg: #fdeceb;
+  --true: #1f8a53;
+  --true-bg: #e6f5ec;
+  --tint-a: #2c6fbb;
+  --tint-a-bg: #e4eefb;
+  --tint-b: #7b4bb7;
+  --tint-b-bg: #efe8fa;
+  --house-base: #dbe9f8;
+  --house-cover: #ece1fa;
+  --given: #f2f1ee;
+  --mark: #5a6472;            /* pencil marks: 6.0:1, passes AA. Was --ink-faint at 3.0:1. */
+  --mark-weight: 400;
+  --mark-size: clamp(8px, 1.9vw, 12.5px);
+
+  --shadow: 0 1px 2px rgba(20,25,35,.06), 0 4px 16px rgba(20,25,35,.06);
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c;
+    --panel: #1b1f26;
+    --ink: #e6e9ee;
+    --ink-soft: #a3adbb;
+    --ink-faint: #6d7887;
+    --rule: #2c323b;
+    --rule-strong: #7d8898;
+
+    --accent: #6ba6e8;
+    --accent-soft: #1d2a3a;
+
+    --pattern: #f0b544;
+    --pattern-bg: #3a2f16;
+    --elim: #f0736a;
+    --elim-bg: #3a1f1d;
+    --true: #56c98c;
+    --true-bg: #14301f;
+    --tint-a: #6ba6e8;
+    --tint-a-bg: #1a2a3d;
+    --tint-b: #ab86e0;
+    --tint-b-bg: #2a2140;
+    --house-base: #1d2c3e;
+    --house-cover: #2b2340;
+    --given: #232830;
+    --mark: #a3adbb;          /* 7.3:1 on the dark panel */
+
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--accent); }
+
+/* ------------------------------------------------------------------ chrome */
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 10px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
+}
+.brand {
+  font-weight: 650; font-size: 17px; letter-spacing: -.01em;
+  color: var(--ink); text-decoration: none;
+}
+.brand-sub { color: var(--ink-faint); font-size: 13px; }
+.nav-toggle {
+  display: none; background: none; border: 0; font-size: 20px;
+  color: var(--ink); cursor: pointer; padding: 0 4px;
+}
+
+.layout { display: flex; align-items: flex-start; gap: 0; }
+
+.sidebar {
+  position: sticky; top: 49px;
+  width: 232px; flex: none;
+  height: calc(100vh - 49px);
+  overflow-y: auto;
+  padding: 18px 12px 40px;
+  border-right: 1px solid var(--rule);
+}
+.nav-group {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--ink-faint); margin: 18px 8px 6px; font-weight: 600;
+}
+.nav-link {
+  display: block; padding: 5px 10px; border-radius: 6px;
+  color: var(--ink-soft); text-decoration: none; font-size: 14.5px;
+}
+.nav-link:hover { background: var(--accent-soft); color: var(--ink); }
+.nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-link.done::after { content: " ✓"; color: var(--true); font-size: 12px; }
+.nav-top { padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.nav-progress {
+  font-size: 11.5px; color: var(--ink-faint); padding: 6px 10px 0; font-variant-numeric: tabular-nums;
+}
+
+.main { flex: 1; min-width: 0; padding: 28px 32px 60px; }
+.page { max-width: 980px; margin: 0 auto; }
+
+.foot {
+  border-top: 1px solid var(--rule);
+  padding: 18px 32px 40px;
+  color: var(--ink-faint); font-size: 13px;
+}
+.foot code { font-family: var(--mono); font-size: 12px; }
+
+/* ------------------------------------------------------------------- text */
+
+.page-head { margin-bottom: 20px; }
+.eyebrow {
+  font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink-faint); font-weight: 600; margin-bottom: 6px;
+}
+.se {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0;
+  background: var(--accent-soft); color: var(--accent);
+  padding: 2px 6px; border-radius: 4px; margin-left: 8px; text-transform: none;
+}
+h1 { font-family: var(--serif); font-size: 34px; line-height: 1.15; margin: 0 0 6px; letter-spacing: -.01em; }
+h2 { font-size: 19px; margin: 0 0 10px; letter-spacing: -.01em; }
+h3 { font-size: 16px; margin: 22px 0 6px; }
+.tagline { color: var(--ink-soft); font-size: 17px; margin: 0; max-width: 62ch; }
+
+.skip-line { margin: 6px 0 0; }
+a.skip {
+  font-size: 13.5px; color: var(--ink-faint); text-decoration: none;
+  border-bottom: 1px dotted var(--rule);
+}
+a.skip:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+.prose { max-width: 68ch; }
+.prose p { margin: 0 0 12px; }
+.prose ul { margin: 0 0 12px; padding-left: 22px; }
+.prose li { margin-bottom: 6px; }
+.callout {
+  background: var(--accent-soft); border-left: 3px solid var(--accent);
+  padding: 10px 14px; border-radius: 0 6px 6px 0;
+}
+
+.card {
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+  padding: 18px 20px; margin: 22px 0; box-shadow: var(--shadow);
+}
+.card.warn { border-color: var(--pattern); background: var(--pattern-bg); }
+.mistakes ul { margin: 0; padding-left: 20px; }
+.mistakes li { margin-bottom: 8px; color: var(--ink-soft); }
+
+.rc { font-family: var(--mono); font-size: .92em; font-weight: 600; color: var(--accent); }
+.dig {
+  font-family: var(--mono); font-weight: 700; color: var(--pattern);
+  background: var(--pattern-bg); padding: 0 4px; border-radius: 3px;
+}
+.chain { font-family: var(--mono); font-size: .9em; }
+.chain.big { font-size: 15px; line-height: 2; }
+.chain b { color: var(--accent); font-size: 1.15em; }
+.carry { color: var(--ink-faint); font-size: .85em; }
+.muted { color: var(--ink-faint); font-size: 14px; }
+
+/* ------------------------------------------------------------------ stage */
+
+.stage {
+  display: grid; grid-template-columns: minmax(320px, 1fr) 1fr;
+  gap: 28px; align-items: start; margin: 22px 0;
+}
+.board-pane { min-width: 0; }
+.narrative { min-width: 0; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+.hint-text { color: var(--ink-faint); font-size: 12.5px; }
+
+.btn {
+  font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 7px;
+  border: 1px solid var(--rule); background: var(--panel); color: var(--ink);
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .38; cursor: default; }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+.btn.ghost { background: transparent; color: var(--ink-soft); }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { opacity: .9; color: #fff; }
+.btn.digit { font-family: var(--mono); width: 34px; padding: 5px 0; text-align: center; }
+.btn.digit.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.option { display: block; width: 100%; text-align: left; margin-bottom: 6px; }
+
+/* Digit-first input. The buttons are deliberately large: on a phone a pencil mark is a
+   ~13px target, and this is the path that avoids having to hit one. */
+.digit-pad {
+  display: grid; grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 6px; margin-top: 12px; max-width: 480px;
+}
+.pad-label {
+  grid-column: 1 / -1; color: var(--ink-faint); font-size: 12.5px; margin-bottom: 2px;
+}
+.digit-pad .btn.digit {
+  width: auto; min-width: 0; height: 42px; padding: 0; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+.pad-host:empty { display: none; }
+
+.done-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.done-card span { color: var(--ink-soft); }
+.dots { display: flex; gap: 5px; margin-bottom: 12px; }
+.dot {
+  width: 22px; height: 5px; border-radius: 3px; border: 0; padding: 0;
+  background: var(--rule); cursor: pointer;
+}
+.dot.seen { background: var(--ink-faint); }
+.dot.active { background: var(--accent); }
+
+.step-text { font-size: 16px; line-height: 1.6; min-height: 5em; }
+.step-text p { margin: 0 0 10px; }
+.step-n {
+  font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px;
+  margin-right: 8px; vertical-align: 2px;
+}
+.step-nav { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+.whatif {
+  margin-top: 6px; padding: 14px; border-radius: 8px;
+  background: var(--accent-soft); border: 1px solid var(--rule);
+}
+.whatif-head { font-weight: 650; margin-bottom: 8px; }
+.verdict { margin-top: 10px; padding: 8px 10px; border-radius: 6px; background: var(--panel); }
+.verdict.bad { border-left: 3px solid var(--elim); }
+.verdict.good { border-left: 3px solid var(--true); }
+
+.prompt { font-size: 15px; margin-bottom: 10px; }
+.feedback { min-height: 3em; font-size: 15px; padding: 8px 0; }
+.feedback.good { color: var(--true); }
+.feedback.bad { color: var(--elim); }
+.feedback.warn { color: var(--ink-soft); }
+
+.paste {
+  font-family: var(--mono); font-size: 12px; padding: 6px 8px; flex: 1; min-width: 200px;
+  border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); color: var(--ink);
+}
+
+.page-nav {
+  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--rule);
+  font-size: 15px;
+}
+.page-nav .next { margin-left: auto; text-align: right; }
+
+.aic-list { margin-top: 16px; display: grid; gap: 6px; }
+.aic-item {
+  font: inherit; text-align: left; cursor: pointer; padding: 8px 12px;
+  border: 1px solid var(--rule); border-radius: 7px; background: var(--panel); color: var(--ink);
+}
+.aic-item.active { border-color: var(--accent); background: var(--accent-soft); }
+.aic-item b { display: block; font-size: 14.5px; }
+.aic-item span { color: var(--ink-faint); font-size: 12.5px; }
+.link-list { font-size: 14px; padding-left: 20px; }
+.link-list li { margin-bottom: 4px; }
+
+/* ------------------------------------------------------------------ board */
+
+.board { position: relative; width: 100%; max-width: 480px; }
+
+.board-row { display: contents; }   /* role=row for AT, no effect on the 9x9 layout */
+
+.board-grid {
+  display: grid;
+  /* minmax(0,1fr), not 1fr: plain 1fr is minmax(auto,1fr), so a cell whose pencil marks
+     are taller than its track silently stretches the whole row — and with display:contents
+     rows, leaves the other rows to collapse. Both grid axes must be pinned. */
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  aspect-ratio: 1;
+  border: 2px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.cell {
+  position: relative;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background-color .18s ease, opacity .18s ease;
+}
+.cell:nth-child(9n) { border-right: 0; }
+.cell:nth-child(n+73) { border-bottom: 0; }
+.cell.edge-right { border-right: 2px solid var(--rule-strong); }
+.cell.edge-bottom { border-bottom: 2px solid var(--rule-strong); }
+
+.cell .value {
+  font-family: var(--mono); font-weight: 600;
+  font-size: clamp(15px, 4.2vw, 26px);
+  color: var(--ink);
+}
+/* Clues vs worked-out digits, distinguished the way a newspaper puzzle does it — printed
+   clues heavy, your own entries lighter. This used to use the accent colour, which also
+   means strong link, selection, focus, case-split group A and hyperlink. Structure gets
+   the hue; content does not. */
+.cell.given .value { color: var(--ink); font-weight: 700; }
+.cell.solved:not(.given) .value { color: var(--ink-soft); font-weight: 500; }
+.cell.given { background: var(--given); }
+
+.cands {
+  position: absolute; inset: 2px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+.cand {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: var(--mark-size);
+  font-weight: var(--mark-weight);
+  line-height: 1;              /* body line-height would overflow the 3x3 track */
+  overflow: hidden;
+  color: var(--mark);
+  border-radius: 2px;
+  transition: color .15s ease, background-color .15s ease, opacity .15s ease;
+}
+.cand.off { visibility: hidden; }
+
+.cand.mark-pattern { color: var(--pattern); background: var(--pattern-bg); font-weight: 700; }
+/* confirmed vs in-pattern also carry a shape difference, not just green vs amber */
+.cand.mark-true    {
+  color: var(--true); background: var(--true-bg); font-weight: 700;
+  outline: 1.5px solid var(--true); outline-offset: -1.5px;
+}
+.cand.mark-elim    { color: var(--elim); background: var(--elim-bg); font-weight: 700; text-decoration: line-through; }
+.cand.mark-gone    { color: var(--elim); opacity: .45; text-decoration: line-through; visibility: visible; }
+.cand.mark-hint    { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+
+.cell.house-base  { background: var(--house-base); }
+.cell.house-cover { background: var(--house-cover); }
+.cell.house-base.house-cover {
+  background: linear-gradient(135deg, var(--house-base) 50%, var(--house-cover) 50%);
+}
+
+.cell.focus { background: var(--pattern-bg); }
+/* Dim hard enough that the pattern jumps out, but not so hard that the surrounding grid
+   becomes unreadable — the learner still needs the context to make sense of it. */
+.cell.dimmed { opacity: .42; }
+.cell.dimmed .value { color: var(--ink-faint); }
+
+/* The two sides of a case split must not differ by hue alone: group A gets a solid ring,
+   group B a dashed one, so the distinction survives any form of color blindness. */
+.cell.tint-a {
+  background: var(--tint-a-bg);
+  outline: 2px solid var(--tint-a); outline-offset: -2px;
+}
+.cell.tint-b {
+  background: var(--tint-b-bg);
+  outline: 2px dashed var(--tint-b); outline-offset: -2px;
+}
+.cell.tint-pivot { box-shadow: inset 0 0 0 2px var(--pattern); }
+.cell.tint-trial { background: var(--true-bg); }
+.cell.tint-trial .value { color: var(--true); }
+.cell.tint-pick { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.cell.tint-dead { background: var(--elim-bg); box-shadow: inset 0 0 0 2px var(--elim); }
+.cell.selected { box-shadow: inset 0 0 0 2px var(--accent); }
+.cell:focus { outline: none; }
+.cell:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: -3px; z-index: 2;
+}
+.btn:focus-visible, a:focus-visible, .dot:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.cell.broken { background: var(--elim-bg); }
+
+@keyframes pulse-cell {
+  0%   { box-shadow: inset 0 0 0 3px var(--true); }
+  100% { box-shadow: inset 0 0 0 3px transparent; }
+}
+.cell.pulse { animation: pulse-cell .9s ease-out; }
+
+.board-overlay { position: absolute; inset: 0; pointer-events: none; }
+.link { stroke-width: 3.5; fill: none; }
+.link-strong { stroke: var(--accent); }
+.link-weak { stroke: var(--elim); stroke-dasharray: 10 9; opacity: .85; }
+.link-arrow { stroke: var(--pattern); stroke-width: 3; }
+.marker.link-strong { fill: var(--accent); }
+.marker.link-weak { fill: var(--elim); }
+
+/* --------------------------------------------------------------- responsive */
+
+@media (max-width: 900px) {
+  .stage { grid-template-columns: 1fr; }
+  .board { max-width: 100%; margin: 0 auto; }
+}
+
+@media (max-width: 780px) {
+  .nav-toggle { display: block; }
+  .brand-sub { display: none; }
+  .sidebar {
+    position: fixed; left: 0; top: 49px; bottom: 0; z-index: 15;
+    background: var(--panel); transform: translateX(-100%);
+    transition: transform .2s ease; box-shadow: var(--shadow);
+    height: auto;
+  }
+  body.nav-open .sidebar { transform: none; }
+  .main { padding: 20px 16px 50px; }
+  h1 { font-size: 27px; }
+  .foot { padding: 16px; }
+
+  .card { padding: 14px 16px; margin: 16px 0; }
+  .step-text { min-height: 0; }
+}
+
+.skip-to-content {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--accent); color: #fff; padding: 10px 16px;
+  border-radius: 0 0 6px 0; text-decoration: none;
+}
+.skip-to-content:focus { left: 0; }
+.main:focus { outline: none; }
+
+.got-it { color: var(--true); font-weight: 600; }
+.filter-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 10px; }
+.filter-row .btn.digit { width: 30px; height: 30px; padding: 0; font-size: 13px;
+  display: flex; align-items: center; justify-content: center; }
+.filter-row .label { color: var(--ink-faint); font-size: 12.5px; margin-right: 4px; }
+
+/* the "sees both ends" elimination zone */
+.cell.tint-zone { background: var(--elim-bg); outline: 1px dotted var(--elim); outline-offset: -1px; }
+
+.step-text.superseded { opacity: .35; }
+
+/* "How to hunt these" — search procedure, as opposed to the rule itself */
+.card.hunt { border-left: 3px solid var(--pattern); }
+.yield-chart { margin: 12px 0 16px; max-width: 380px; }
+.yield-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; font-size: 13px; }
+.yield-label { width: 66px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.yield-bar { flex: 1; background: var(--rule); border-radius: 3px; height: 12px; overflow: hidden; }
+.yield-bar i { display: block; height: 100%; background: var(--ink-faint); border-radius: 3px; }
+.yield-row.peak .yield-bar i { background: var(--pattern); }
+.yield-row.peak .yield-label { color: var(--ink); font-weight: 600; }
+.yield-val { width: 42px; text-align: right; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.strike { stroke: var(--elim); stroke-width: 4; opacity: .45; stroke-linecap: round; }
+.cell.tint-survivor { background: var(--true-bg); }
+.cell.tint-forced {
+  background: var(--true-bg);
+  outline: 3px solid var(--true); outline-offset: -3px;
+}
+.digit-strip { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; }
+.digit-strip .pick { position: relative; }
+.digit-strip .btn.digit { width: 40px; height: 44px; padding: 0; font-size: 17px;
+  display: flex; align-items: center; justify-content: center; }
+.digit-strip .count { display: block; font-size: 9.5px; color: var(--ink-faint);
+  text-align: center; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.digit-strip .pick.good .count { color: var(--true); font-weight: 700; }
+.digit-strip .pick.tried .btn.digit { opacity: .45; }
+.tally { font-size: 13px; color: var(--ink-faint); margin-top: 8px; }
+
+.scan-table { margin: 10px 0; display: grid; gap: 3px; max-width: 340px; }
+.scan-row.many { opacity: .45; }
+.scan-row .btn.scan-pick { width: 100%; text-align: left; font-variant-numeric: tabular-nums; }
+.scan-row.picked .btn.scan-pick { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.scan-dead { font-size: 13px; color: var(--ink-faint); padding: 5px 10px; display: block; }
+.digit-strip .count.good { color: var(--true); font-weight: 700; }
+
+.legend-given { color: var(--ink); font-weight: 700; background: var(--given); padding: 0 4px; border-radius: 3px; }
+.legend-solved { color: var(--ink-soft); font-weight: 500; }
+
+.pad-label.armed { color: var(--accent); font-weight: 600; }
+
+/* Pencil marks are what you read while scanning, so their contrast is a setting rather
+   than a fixed choice. The default already passes AA; this pushes marks to full ink and
+   a little larger, for scanning or for anyone who wants them plainer. */
+body.marks-bold {
+  --mark: var(--ink);
+  --mark-weight: 600;
+  --mark-size: clamp(9px, 2.1vw, 14px);
+}
+.marks-toggle {
+  margin-left: auto; font: inherit; font-size: 12.5px;
+  background: none; border: 1px solid var(--rule); border-radius: 6px;
+  padding: 3px 9px; color: var(--ink-soft); cursor: pointer; white-space: nowrap;
+}
+.marks-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.marks-toggle[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+.btn.emphasis[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.filter-row .btn.emphasis { margin-left: auto; }
+
+/* digit-position table: rows are digits, columns are the empty cells of one house */
+.pos-table { overflow-x: auto; margin-bottom: 12px; }
+.ptable { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.ptable th, .ptable td { border: 1px solid var(--rule); padding: 3px 6px; text-align: center; }
+.ptable thead th { color: var(--ink-faint); font-weight: 500; font-size: 10.5px; }
+.ptable th.corner { border: 0; }
+.ptable .digit-cell { font-weight: 700; color: var(--ink); background: var(--bg); min-width: 26px; }
+.ptable td.dot { color: var(--accent); }
+.ptable td.blank { color: transparent; }
+.ptable tr.twospot .digit-cell { background: var(--accent-soft); color: var(--accent); }
+.ptable tr.twospot td.dot { color: var(--accent); font-weight: 700; }
+.ptable tr.single .digit-cell { background: var(--true-bg); color: var(--true); }
+.ptable tr.chosen td { background: var(--pattern-bg); }
+.ptable tr.chosen .digit-cell { background: var(--pattern); color: #fff; }
+.controls .btn.small.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+/* watch-a-solve: the ladder of techniques tried before one worked */
+.watch-status { font-size: 14px; margin-bottom: 10px; color: var(--ink-soft); }
+.teach-link { margin-left: 8px; text-transform: none; letter-spacing: 0; font-weight: 600; }
+.ladder { margin-top: 22px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.ladder h3 { margin: 0 0 8px; font-size: 14px; }
+.ladder-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; margin-bottom: 2px; color: var(--ink-faint); }
+.ladder-name { width: 120px; flex: none; }
+.ladder-bar { flex: 1; background: var(--rule); height: 8px; border-radius: 4px; overflow: hidden; }
+.ladder-bar i { display: block; height: 100%; background: var(--ink-faint); }
+.ladder-n { width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+.ladder-mark { width: 12px; text-align: center; }
+.ladder-row.hit { color: var(--true); font-weight: 600; }
+.ladder-row.hit .ladder-bar i { background: var(--true); }

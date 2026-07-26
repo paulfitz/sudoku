@@ -1,0 +1,20 @@
+{
+  "name": "advanced-sudoku-teaching",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive lessons in advanced sudoku technique. Static site; the build step generates the puzzle bank.",
+  "scripts": {
+    "build": "node tools/generate.js --count 4000",
+    "test": "node tools/test.js --count 120 && npx playwright test && node tools/drive.js tools/smoke.js /tmp",
+    "test:solver": "node tools/test.js --count 120",
+    "test:user": "npx playwright test",
+    "test:site": "node tools/drive.js tools/smoke.js /tmp",
+    "serve": "python3 -m http.server 8099 --directory site",
+    "deploy": "git subtree push --prefix site origin gh-pages"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.62.0"
+  },
+  "homepage": "https://paulfitz.github.io/sudoku/"
+}
