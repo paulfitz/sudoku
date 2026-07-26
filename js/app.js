@@ -861,7 +861,11 @@
       onCell: function (c) { if (onPick) onPick(c); },
       onCandidate: function (c) { if (onPick) onPick(c); }
     });
+    // Each panel owns actControls and clears it freely; the emphasis button sits outside
+    // so a panel that rebuilds its buttons on every step does not re-register it each time.
     var controls = add(boardPane, h('div', 'controls'));
+    var actControls = add(controls, h('div', 'controls act-controls'));
+    emphasisButton(controls);
     var info = add(side, h('div', 'step-text'));
 
     var ACTS = [
@@ -878,10 +882,10 @@
         b.className = 'btn small act-tab' + (k === i ? ' active' : '');
         b.setAttribute('aria-pressed', k === i ? 'true' : 'false');
       });
-      clear(controls);
+      clear(actControls);
       onPick = null;
       ACTS[i].run({
-        bv: bv, info: info, controls: controls,
+        bv: bv, info: info, controls: actControls,
         picks: function (fn) { onPick = fn; }
       });
     }
@@ -950,10 +954,12 @@
       if (cell !== l.a && cell !== l.b) return;
       var at = off.indexOf(cell);
       if (at >= 0) off.splice(at, 1); else off.push(cell);
-      draw();
+      // Pulse whatever the tap just decided, not the cell that was tapped: the point of
+      // the panel is that pushing one end moves the *other* one.
+      draw(off.length === 1 ? (off[0] === l.a ? l.b : l.a) : cell);
     });
 
-    function draw() {
+    function draw(pulse) {
       var l = links[idx], d = l.digit;
       var house = S.houseName(S.HOUSE_META[l.house]);
       var marks = [], cellClass = {};
@@ -963,7 +969,8 @@
           '<p>Only the ' + digTag(d) + ' is showing. In ' + house + ' it has exactly two ' +
           'homes left, ' + cellTag(l.a) + ' and ' + cellTag(l.b) + '. No other cell in ' +
           house + ' can take it.</p>' +
-          '<p><b>Switch one of them off.</b> Tap either one.</p>';
+          '<p><b>Tap either outlined cell</b> to suppose the ' + digTag(d) + ' is ' +
+          '<em>not</em> there.</p>';
       } else if (off.length === 1) {
         var gone = off[0], lit = gone === l.a ? l.b : l.a;
         marks.push({ cell: gone, digit: d, kind: 'elim' });
@@ -975,7 +982,7 @@
           d + '.</b></p>' +
           '<p>You did not have to look at ' + cellTag(lit) + ' at all. The count in ' +
           house + ' settled it.</p>' +
-          '<p class="muted">Now try switching that one off as well.</p>';
+          '<p class="muted">Now try ruling that one out too.</p>';
       } else {
         marks.push({ cell: l.a, digit: d, kind: 'elim' });
         marks.push({ cell: l.b, digit: d, kind: 'elim' });
@@ -988,9 +995,10 @@
           '<p>So <b>they cannot both be off.</b> At least one of ' + cellTag(l.a) + ' and ' +
           cellTag(l.b) + ' is the ' + d + '. A pair of cells tied together that way is a ' +
           '<b>strong link</b>.</p>' +
-          '<p class="muted">Tap one of them again to let it back on, or try another link.</p>';
+          '<p class="muted">Tap either one again to put it back, or try another link.</p>';
       }
 
+      if (!off.length) { cellClass[l.a] = 'tap'; cellClass[l.b] = 'tap'; }
       ui.bv.render({
         board: board, givens: drill.givens, solo: d,
         houses: [{ house: l.house, kind: 'base' }],
@@ -998,6 +1006,7 @@
         focus: [l.a, l.b], keep: S.HOUSES[l.house], dim: true,
         marks: marks, cellClass: cellClass
       });
+      if (pulse !== undefined && pulse !== null) ui.bv.pulse([pulse]);
     }
     draw();
   }
@@ -1023,7 +1032,7 @@
     var claimed = Object.create(null);   // ends claimed at least once, for the closing line
 
     ui.picks(function (cell) {
-      if (from === null && ends.indexOf(cell) >= 0) { from = cell; step = 0; draw(); }
+      if (from === null && ends.indexOf(cell) >= 0) { from = cell; step = 0; draw(cell); }
     });
 
     // The chain reads the same from either end. Walking it backwards is not a variation,
@@ -1050,17 +1059,21 @@
         '<span class="muted">(weak link)</span>';
     }
 
-    function draw() {
+    function draw(pulse) {
       clear(ui.controls);
       var marks = [], cellClass = {}, arrows = [], html;
+      var keep = [];
 
       if (from === null) {
-        html = '<p>Two strong links, joined in the middle by a weak one. The two <b>far ' +
-          'ends</b> are ' + cellTag(ends[0]) + ' and ' + cellTag(ends[1]) + '.</p>' +
-          '<p><b>Tap either far end</b> to suppose it is <em>not</em> the ' + digTag(d) +
-          '.</p>' +
-          '<p class="muted">Either one works. Try it from one end, then start over and try ' +
-          'the other.</p>';
+        // The two ends are the only things to tap, and until now they were tinted exactly
+        // like the two middle cells — so "tap either far end" meant counting squares to
+        // find out which two of the four it meant.
+        ends.forEach(function (e) { cellClass[e] = 'tap'; });
+        html = '<p>Four cells, joined by three lines. The two <b>solid</b> lines are strong ' +
+          'links; the <b>dashed</b> one between them is weak.</p>' +
+          '<p><b>Tap either outlined cell</b> — ' + cellTag(ends[0]) + ' or ' +
+          cellTag(ends[1]) + ' — to suppose the ' + digTag(d) + ' is <em>not</em> there.</p>' +
+          '<p class="muted">Either end works. Try one, then start over and try the other.</p>';
       } else {
         var o = walk();
         for (var i = 0; i <= step; i++) {
@@ -1069,15 +1082,19 @@
           if (on) cellClass[o.cells[i]] = 'trial';
         }
         var list = '';
-        for (var k = 0; k < step; k++) list += '<li>' + reason(o, k) + '</li>';
+        for (var k = 0; k < step; k++) {
+          list += '<li' + (k === step - 1 ? ' class="now"' : '') + '>' + reason(o, k) + '</li>';
+        }
 
         html = '<p>Suppose ' + cellTag(o.cells[0]) + ' is <em>not</em> the ' + digTag(d) +
           '.</p>' + (list ? '<ol class="chain-steps">' + list + '</ol>' : '');
 
         if (step < 3) {
-          ui.controls.appendChild(btn('Follow the next link', 'btn small primary', function () {
-            step++; draw();
-          }));
+          // Naming the cell the link leads to means you know where to look before you
+          // press, instead of hunting the grid afterwards for whatever just changed.
+          var nextCell = o.cells[step + 1];
+          ui.controls.appendChild(btn('Follow the link to ' + S.cellName(nextCell),
+            'btn small primary', function () { step++; draw(nextCell); }));
         } else {
           html += '<p class="verdict good">Supposing ' + cellTag(o.cells[0]) + ' had no ' +
             d + ' forced ' + cellTag(o.cells[3]) + ' to be one. So <b>at least one of ' +
@@ -1094,6 +1111,7 @@
             marks.length = 0; cellClass = {};
             marks.push({ cell: claim, digit: d, kind: 'true' });
             cellClass[claim] = 'trial';
+            keep = victims;      // they become readable only now that they are the subject
             victims.forEach(function (v) {
               marks.push({ cell: v, digit: d, kind: 'elim' });
               cellClass[v] = 'dead';
@@ -1124,9 +1142,10 @@
         board: board, givens: drill.givens, solo: d,
         houses: f.houses.map(function (x) { return { house: x, kind: 'base' }; }),
         links: f.links, arrows: arrows,
-        focus: path, keep: victims, dim: true,
+        focus: path, keep: keep, dim: true,
         marks: marks, cellClass: cellClass
       });
+      if (pulse !== undefined && pulse !== null) ui.bv.pulse([pulse]);
     }
 
     draw();
@@ -1203,10 +1222,6 @@
     ui.controls.appendChild(btn('Show me all of them', 'btn small ghost', function () {
       revealed = !revealed; draw();
     }));
-    // The other two acts color the cells they are talking about. This one does not — the
-    // whole exercise is finding marks nobody has pointed at — so the emphasis control
-    // earns its place here in a way it would not there.
-    emphasisButton(ui.controls);
 
     function draw() {
       var d = digit(), ls = links();
