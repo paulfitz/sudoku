@@ -961,6 +961,44 @@ Also: `window.innerWidth` returns 421 on a 390-wide emulated viewport, so the
 keep-it-on-screen clamp was clamping to an edge that was not there and panels opened into
 the gutter. `document.documentElement.clientWidth` is the right measure.
 
+### Part S — Rulers, and making a step announce itself
+
+Reported of the strong-links panels: *"it is opaque to me what each step does, or what I'm
+supposed to do, or what is happening in the grid and why."* Three separate failures, and
+walking the panels state by state found all three.
+
+**Nothing connected the words to the grid.** Every instruction on this site names cells as
+`r7c5`, and the grid offered nothing to count against — so following any instruction meant
+counting squares with a finger. The grid now has 1–9 rulers on both axes. This is the
+highest-leverage change of the three because it is not about strong links at all: it fixes
+every lesson, every walkthrough frame and every drill prompt at once.
+
+Implementation note worth keeping: the SVG link overlay is `inset: 0` on its container, so
+the rulers could not simply be added inside `.board`. Grid and overlay now share a
+`.board-plot` square, with the rulers hung outside it. The check asserts both that labels
+sit within 1px of the cells they name and that the overlay still covers exactly the grid —
+because a ruler that pushes the overlay off draws every link line away from its candidate,
+which is a much worse bug than a misaligned label.
+
+**Nothing said what was tappable.** "Tap either one" with four amber cells on screen. Cells
+the widget wants tapped now carry a dashed outline (`tint-tap`), and the two far ends of the
+chain are visually distinct from the two middle cells for the first time.
+
+**The elimination targets were lit from the moment the panel opened**, three bright cells
+with nothing explaining them, only becoming the subject four steps later. They stay dim
+until the payoff.
+
+**A step changed one small thing somewhere with nothing drawing the eye.** The button now
+names where the link leads ("Follow the link to r1c4"), so you know where to look *before*
+pressing; the cell pulses on arrival; and completed steps recede to `--ink-soft` while the
+newest stays at full strength.
+
+One real bug fell out of the new tests, and it was a race rather than a flake: the spec
+passed alone and failed in a full run. A click also fires `pointerenter`, which arms the
+120ms hover-open timer — so dismissing within that window let the timer re-open what had
+just been closed. Tap a term and hit Escape quickly and the panel came back. `closeOpen()`
+now cancels the timer.
+
 ### Not built
 
 Jellyfish and naked quads are detected and will appear in the playground's hints, but have

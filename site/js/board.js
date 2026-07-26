@@ -52,9 +52,28 @@
     this.candEls = [];
     var self = this;
 
+    /* Coordinate rulers. Every instruction on this site names cells as "r7c5" and the grid
+     * used to give the reader nothing to count against, so following along meant counting
+     * squares with a finger. They are aria-hidden: the ARIA grid already reports row and
+     * column indices, so reading them out again would just double every cell's label.
+     *
+     * The grid and its link overlay live together in .board-plot, which is what the rulers
+     * are aligned to — the overlay is inset:0 on its container, so hanging the rulers
+     * inside it would have shifted every link line off its candidate. */
+    el('div', 'ruler-corner', this.root).setAttribute('aria-hidden', 'true');
+    var cols = el('div', 'ruler ruler-cols', this.root);
+    cols.setAttribute('aria-hidden', 'true');
+    var rows = el('div', 'ruler ruler-rows', this.root);
+    rows.setAttribute('aria-hidden', 'true');
+    for (var n = 1; n <= 9; n++) {
+      el('span', null, cols).textContent = String(n);
+      el('span', null, rows).textContent = String(n);
+    }
+    var plot = el('div', 'board-plot', this.root);
+
     // role=grid needs real rows; `display: contents` keeps the 9x9 CSS grid layout intact
     // while giving assistive technology the row/cell structure it expects.
-    var grid = el('div', 'board-grid', this.root);
+    var grid = el('div', 'board-grid', plot);
     grid.setAttribute('role', 'grid');
     grid.setAttribute('aria-label', this.opts.label || 'Sudoku grid');
     grid.setAttribute('aria-rowcount', '9');
@@ -92,7 +111,7 @@
     this.active = 0;
     this.lastView = null;
 
-    this.svg = svg('svg', this.root);
+    this.svg = svg('svg', plot);
     this.svg.setAttribute('class', 'board-overlay');
     this.svg.setAttribute('viewBox', '0 0 900 900');
     this.svg.setAttribute('preserveAspectRatio', 'none');
@@ -203,7 +222,9 @@
 
   var SELECTION_WORDS = {
     pick: 'selected', a: 'group A', b: 'group B', pivot: 'pivot',
-    trial: 'placed by the trial', dead: 'contradiction'
+    trial: 'placed by the trial', dead: 'contradiction',
+    // A dashed outline says "tap me" to a sighted reader and nothing at all otherwise.
+    tap: 'tap this one'
   };
 
   /**

@@ -528,7 +528,7 @@ test.describe('strong links are operated, not read', () => {
 
       // Turn the crank. Each press must add a link, and each link must justify itself by
       // naming the house it counted in.
-      const next = stage.locator('.controls .btn', { hasText: 'Follow the next link' });
+      const next = stage.locator('.controls .btn', { hasText: /^Follow the link to/ });
       for (let i = 0; i < 5 && (await next.count()); i++) await next.first().click();
       const steps = info.locator('.chain-steps li');
       expect(await steps.count(), 'the chain never got walked').toBeGreaterThanOrEqual(3);

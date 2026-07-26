@@ -112,6 +112,45 @@ module.exports = async function (page) {
   if (!inSteps) page.fail('glossary: walkthrough narration got no markers — the observer is not seeing re-renders');
   else page.log('glossary: ' + inSteps + ' markers in a re-rendered walkthrough step');
 
+  // --- coordinate rulers --------------------------------------------------
+  //
+  // Every instruction on this site names cells as "r7c5". Without rulers, following one
+  // means counting squares with a finger, which is most of why the strong-links panels
+  // read as opaque. The labels have to line up with the columns they name, and the SVG
+  // link overlay has to stay registered with the grid rather than the ruler frame.
+  var ruler = await page.eval(
+    '(function(){' +
+    ' var g=document.querySelector(".board-grid"), b=g.closest(".board");' +
+    ' if(!b) return JSON.stringify({err:"no .board"});' +
+    ' var cols=b.querySelector(".ruler-cols"), rows=b.querySelector(".ruler-rows");' +
+    ' if(!cols||!rows) return JSON.stringify({err:"no rulers"});' +
+    ' var worst=0;' +
+    ' for (var i=0;i<9;i++){' +
+    '   var cl=cols.children[i].getBoundingClientRect();' +
+    '   var ce=g.querySelector(\'.cell[data-cell="\'+i+\'"]\').getBoundingClientRect();' +
+    '   worst=Math.max(worst, Math.abs((cl.left+cl.width/2)-(ce.left+ce.width/2)));' +
+    '   var rl=rows.children[i].getBoundingClientRect();' +
+    '   var re=g.querySelector(\'.cell[data-cell="\'+(i*9)+\'"]\').getBoundingClientRect();' +
+    '   worst=Math.max(worst, Math.abs((rl.top+rl.height/2)-(re.top+re.height/2)));}' +
+    ' var sv=b.querySelector(".board-overlay").getBoundingClientRect(), gr=g.getBoundingClientRect();' +
+    ' return JSON.stringify({worst:Math.round(worst),' +
+    '   overlayOff:Math.round(Math.abs(sv.left-gr.left)+Math.abs(sv.top-gr.top)+' +
+    '     Math.abs(sv.width-gr.width)+Math.abs(sv.height-gr.height)),' +
+    '   labels:[].map.call(cols.children,function(e){return e.textContent;}).join("")});})()');
+  var R = JSON.parse(ruler);
+  if (R.err) page.fail('rulers: ' + R.err);
+  else {
+    if (R.labels !== '123456789') page.fail('rulers: column labels read "' + R.labels + '"');
+    if (R.worst > 1) page.fail('rulers: labels are up to ' + R.worst + 'px off the cells they name');
+    if (R.overlayOff > 1) {
+      page.fail('rulers: the link overlay no longer covers exactly the grid (off by ' +
+        R.overlayOff + 'px) — every link line will be drawn away from its candidate');
+    }
+    if (!R.err && R.worst <= 1 && R.overlayOff <= 1) {
+      page.log('rulers: 1-9 on both axes, aligned to the cells, overlay still registered');
+    }
+  }
+
   // --- the unexplained difficulty badge -----------------------------------
   var se = await page.eval(
     '(function(){var b=document.querySelector(".se .gloss");' +

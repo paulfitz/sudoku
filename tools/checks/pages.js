@@ -76,8 +76,42 @@ module.exports = async function (page) {
   } else page.log('strong links act 1: both off -> "' + both.replace(/\s+/g, ' ').trim().slice(0, 70) + '"');
   await page.shot('strong-links');
 
+  // Whatever the panel wants tapped has to be marked as tappable. "Tap either one" with
+  // nothing on the grid saying which two meant counting squares to find out.
+  await page.clickText('.act-tab', 'Switch one off');
+  var taps = await page.eval(
+    '[].map.call(document.querySelectorAll(".stage .cell.tint-tap"),' +
+    'function(c){return c.getAttribute("aria-label").split(",")[0];}).join(" ")');
+  if (!taps || taps.split(' ').length !== 2) {
+    page.fail('strong links act 1: the two tap targets are not marked on the grid (got "' +
+      taps + '")');
+  } else page.log('strong links act 1: tap targets outlined — ' + taps);
+
   // act 2: the chain, walked from one end, ending in an either-way elimination
   await page.clickText('.act-tab', 'Chain two');
+  var taps2 = await page.eval(
+    '[].map.call(document.querySelectorAll(".stage .cell.tint-tap"),' +
+    'function(c){return c.getAttribute("aria-label").split(",")[0];}).join(" ")');
+  if (!taps2 || taps2.split(' ').length !== 2) {
+    page.fail('strong links act 2: the two far ends are not distinguished from the two ' +
+      'middle cells (got "' + taps2 + '")');
+  } else page.log('strong links act 2: far ends outlined — ' + taps2);
+
+  // Before the chain is walked, the cells it will eventually eliminate must NOT be lit.
+  // They were, from the moment the panel opened, with nothing saying what they were.
+  var early = await page.eval(
+    '(function(){var S=window.Sudoku,D=window.Drills;' +
+    ' var f=D.makeDrill("skyscraper",0).primary;' +
+    ' var pat=f.cells;' +
+    ' return f.eliminations.filter(function(e){' +
+    '   var c=document.querySelector(\'.stage .cell[data-cell="\'+e.cell+\'"]\');' +
+    '   return c && !c.classList.contains("dimmed");})' +
+    '  .map(function(e){return S.cellName(e.cell);}).join(" ");})()');
+  if (early) {
+    page.fail('strong links act 2: ' + early + ' are lit before the chain has introduced ' +
+      'them — unexplained bright cells read as part of the pattern');
+  } else page.log('strong links act 2: elimination targets stay dim until they are the subject');
+
   var chainEnds = await page.eval(
     '(function(){var S=window.Sudoku,D=window.Drills,f=D.makeDrill("skyscraper",0).primary;' +
     ' var ends=[f.links[0].a, f.links[2].b];' +
@@ -85,7 +119,7 @@ module.exports = async function (page) {
     ' return JSON.stringify({names:ends.map(S.cellName), d:f.digits[0],' +
     '  victims:f.eliminations.map(function(e){return S.cellName(e.cell);})});})()');
   var CH = JSON.parse(chainEnds);
-  for (var s = 0; s < 3; s++) await page.clickText('.controls .btn', 'Follow the next link');
+  for (var s = 0; s < 3; s++) await page.clickText('.controls .btn', 'Follow the link to');
   var conclusion = await page.text('.narrative .step-text');
   if (String(conclusion).indexOf('at least one of ' + CH.names[0]) < 0) {
     page.fail('strong links act 2: walking the chain did not conclude on both ends — "' +

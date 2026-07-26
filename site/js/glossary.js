@@ -128,6 +128,10 @@
   var restoringFocus = false;
 
   function closeOpen() {
+    // A click also fires pointerenter, which arms the hover-open timer. Without cancelling
+    // it here, closing within that 120ms window let the timer re-open what was just
+    // dismissed — so a quick tap-then-Escape looked like Escape did nothing.
+    clearTimeout(hoverTimer);
     if (!openWrap) return;
     openWrap.classList.remove('open');
     openWrap.querySelector('.gloss').setAttribute('aria-expanded', 'false');
@@ -191,6 +195,7 @@
     btn.addEventListener('click', function (ev) {
       ev.preventDefault();
       ev.stopPropagation();
+      clearTimeout(hoverTimer);          // an explicit tap outranks the pending hover
       if (openWrap === wrap && wrap.dataset.pinned) closeOpen();
       else openWrapEl(wrap, true);
     });
