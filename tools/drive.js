@@ -17,7 +17,8 @@ var { spawn } = require('child_process');
 var path = require('path');
 var fs = require('fs');
 
-var SITE = 'file://' + path.join(__dirname, '..', 'site', 'index.html');
+// Defaults to the working copy; set SITE_URL to smoke-test a deployment.
+var SITE = process.env.SITE_URL || ('file://' + path.join(__dirname, '..', 'site', 'index.html'));
 var PORT = 9223;
 
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
